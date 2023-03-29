@@ -1,0 +1,12 @@
+print((9 - 2 + 3*1) / 2);
+
+a = (9 - 2 + 3*1) / 2;
+print(a);
+
+scan(b);
+print(b);
+
+print(a+b);
+
+// math error
+//print(9/0);
