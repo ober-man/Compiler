@@ -8,6 +8,8 @@
 #include <memory>
 #include <optional>
 
+//#define PRINT_GRAPH
+
 #ifdef PRINT_GRAPH
 #define printGraph(...) \
 do \
@@ -40,6 +42,10 @@ class BaseNode
 		virtual double visit() const = 0;
 };
 
+// forward declarations
+class DeclNode;
+class DeclFuncNode;
+
 enum class varType
 {
     INT, DOUBLE, CHAR, STRING, BOOL, VOID
@@ -55,13 +61,13 @@ class VarNode final : public BaseNode
 		//std::weak_ptr<DeclNode> decl;
 
 	public:
-		VarNode(const std::string& name_, double value_ = 0.0) : //, std::weak_ptr<DeclNode>& decl_) :
+		VarNode(const std::string& name_, const double value_ = 0.0) : //, std::weak_ptr<DeclNode>& decl_) :
 			BaseNode(nodeType::ID), name(name_), value(value_) {}
 		~VarNode() = default;
 
 		double getValue() const       { return value; }
 		void setValue(double value_)  { value = value_; }
-		double visit() const override { printGraph(name); return value; }
+		double visit() const override { printGraph("Var %s", name); return value; }
 };
 
 /// TODO: fix some bugs with tables
@@ -73,11 +79,11 @@ class ScopeNode final: public BaseNode
 		std::unordered_map<std::string, std::shared_ptr<DeclNode>> table;
 
 	public:
-		ScopeNode(std::shared_ptr<ScopeNode> prev_ = nullptr) :
+		ScopeNode(const std::shared_ptr<ScopeNode> prev_ = nullptr) :
 			BaseNode(nodeType::SCOPE), prev(prev_) {}
 		~ScopeNode() = default;
 
-		void insert(const std::string& name, std::shared_ptr<DeclNode>& node)  { table[name] = node; }
+		void insert(const std::string& name, const std::shared_ptr<DeclNode>& node)  { table[name] = node; }
 		std::shared_ptr<DeclNode> find(const std::string& name) const;
 		std::shared_ptr<DeclNode> findInThisScope(const std::string& name) const;
 		void addStmt(std::shared_ptr<BaseNode>& stmt)                          { stmts.push_back(stmt); }
@@ -95,10 +101,14 @@ class IfNode final : public BaseNode
 		std::shared_ptr<BaseNode> else_scope = nullptr;
 
 	public:
-		IfNode(std::shared_ptr<BaseNode>& cond_,
-               std::shared_ptr<BaseNode>& scope_,
-               std::shared_ptr<BaseNode>& else_scope_ = nullptr) :
+		IfNode(const std::shared_ptr<BaseNode>& cond_,
+               const std::shared_ptr<BaseNode>& scope_,
+               const std::shared_ptr<BaseNode>& else_scope_) :
             BaseNode(nodeType::IF), cond(cond_), scope(scope_), else_scope(else_scope_) {}
+
+		IfNode(std::shared_ptr<BaseNode>& cond_,
+               std::shared_ptr<BaseNode>& scope_) :
+            BaseNode(nodeType::IF), cond(cond_), scope(scope_) {}
 		~IfNode() = default;
 		double visit() const override;
 };
@@ -110,7 +120,7 @@ class WhileNode final : public BaseNode
 		std::shared_ptr<BaseNode> scope = nullptr;
 
 	public:
-		WhileNode(std::shared_ptr<BaseNode>& cond_, std::shared_ptr<BaseNode>& scope_) :
+		WhileNode(const std::shared_ptr<BaseNode>& cond_, const std::shared_ptr<BaseNode>& scope_) :
 			BaseNode(nodeType::WHILE), cond(cond_), scope(scope_) {}
 		~WhileNode() = default;
 		double visit() const override;
@@ -131,12 +141,12 @@ class BinOpNode final : public BaseNode
 		std::shared_ptr<BaseNode> right = nullptr;
 
 	public:
-		BinOpNode(std::shared_ptr<BaseNode>& left_, binOpType op_, std::shared_ptr<BaseNode>& right_) :
+		BinOpNode(const std::shared_ptr<BaseNode>& left_, const binOpType op_, const std::shared_ptr<BaseNode>& right_) :
 			BaseNode(nodeType::BINOP), left(left_), op(op_), right(right_) {}
 		~BinOpNode() = default;
 
 		std::shared_ptr<BaseNode> getLeft() const  { return left; }
-		binOpType getOp() const { return op; }
+		binOpType getOperType() const 			   { return op; }
 		std::shared_ptr<BaseNode> getRight() const { return right; }
 		double visit() const override;
 };
@@ -153,12 +163,12 @@ class UnOpNode final : public BaseNode
 		unOpType op;
 
 	public:
-		UnOpNode(std::shared_ptr<BaseNode>& expr_, unOpType op_) :
+		UnOpNode(const std::shared_ptr<BaseNode>& expr_, const unOpType op_) :
 			BaseNode(nodeType::UNOP), expr(expr_), op(op_) {}
 		~UnOpNode() = default;
 
 		std::shared_ptr<BaseNode> getExpr() const { return expr; }
-		unOpType getOp() const                    { return op; }
+		unOpType getOperType() const              { return op; }
 		double visit() const override;
 };
 
@@ -169,7 +179,7 @@ class ConstNode final : public BaseNode
 		double num;
 
 	public:
-		ConstNode(int num_) :
+		ConstNode(const int num_) :
 			BaseNode(nodeType::CONST), num(num_) {}
 		~ConstNode() = default;
 
@@ -188,7 +198,7 @@ class DeclNode : public BaseNode
         exprType expr_type;
 
     public:
-        DeclNode(exprType type) : BaseNode(nodeType::DECL), expr_type(type) {}
+        DeclNode(const exprType type) : BaseNode(nodeType::DECL), expr_type(type) {}
         virtual ~DeclNode() = default;
 
         virtual std::string getName() const = 0;
@@ -204,10 +214,10 @@ class DeclVarNode final : public DeclNode
         varType var_type;
 
 	public:
-		DeclVarNode(std::string& name_,
-                    std::shared_ptr<VarNode> var_,
-                    varType type_ = varType::VOID) :
-		    DeclNode(exprType::VAR), name(name_), var(var_), type(type_) {}
+		DeclVarNode(const std::string& name_,
+                    const std::shared_ptr<VarNode> node_,
+                    const varType var_type_ = varType::VOID) :
+		    DeclNode(exprType::VAR), name(name_), node(node_), var_type(var_type_) {}
 		~DeclVarNode() = default;
 
         std::string getName() const override { return name; }
@@ -245,6 +255,25 @@ class ArrAccess final : public BaseNode
 };
 #endif // ARRAY_SUPPORTED
 
+
+class FuncNode final : public BaseNode
+{
+    private:
+		std::weak_ptr<DeclFuncNode> decl;
+		std::shared_ptr<ScopeNode> scope = nullptr;
+
+	public:
+		FuncNode(const std::weak_ptr<DeclFuncNode>& decl_, 
+				 const std::shared_ptr<ScopeNode>& scope_) :
+			BaseNode(nodeType::FUNC), decl(decl_), scope(scope_) {}
+		~FuncNode() = default;
+
+		std::string getFuncName() const;
+		auto getFuncArgs() const;
+		auto getScope() const 						{ return scope; }
+		double visit() const override				{ printGraph("func %s\n", getFuncName()); return 0; }
+};
+
 /// TODO: bool ret <- types
 class DeclFuncNode final : public DeclNode
 {
@@ -255,38 +284,20 @@ class DeclFuncNode final : public DeclNode
 		bool defined = false;
 
 	public:
-		DeclFuncNode(std::string& funcname_, std::vector<std::string>& args_ = {}) :
+		DeclFuncNode(const std::string& funcname_, 
+					 const std::vector<std::string>& args_ = {}) :
             DeclNode(exprType::FUNC), funcname(funcname_), args(args_) {}
 		~DeclFuncNode() = default;
 
-        std::vector<std::string> getFuncArgs() const       { return args; }
         std::string getName() const override               { return funcname; }
+        auto getFuncArgs() const       					   { return args; }
         auto getFuncNode() const                           { return func; }
+        auto getScope() const 							   { return func->getScope(); }
         bool isDefined() const                             { return defined; }
 
         void defineFunc()                                  { defined = true; }
         void setFuncNode(std::shared_ptr<FuncNode>& func_) { func = func_; }
 		double visit() const override					   { printGraph("decl func %s\n", funcname); return 0; }
-};
-
-/// TODO: make ret with std::optional
-/// TODO: setter for ret
-class FuncNode final : public BaseNode
-{
-    private:
-		std::weak_ptr<DeclFuncNode> decl = nullptr;
-		std::shared_ptr<ScopeNode> scope = nullptr;
-		std::shared_ptr<RetNode> ret = nullptr;
-
-	public:
-		FuncNode(std::weak_ptr<DeclFuncNode>& decl_, std::shared_ptr<ScopeNode>& scope_) :
-			BaseNode(nodeType::FUNC), decl(decl_), scope(scope_) {}
-		~FuncNode() = default;
-
-		void setRet(std::shared_ptr<RetNode>& ret_) { ret = ret_; }
-		std::string getFuncName() const             { return decl->getName(); }
-		auto getScope() const 						{ return scope; }
-		double visit() const override				{ printGraph("func %s\n", getFuncName()); return 0; }
 };
 
 /// TODO: make string_view
@@ -297,12 +308,19 @@ class CallNode final : public BaseNode
 		std::string name;
 		std::shared_ptr<FuncNode> func;
 		std::shared_ptr<ScopeNode> curScope;
-		std::vector<std::string> args;
+		std::vector<double> args;
 
 	public:
-		CallNode(std::string& name_, std::shared_ptr<FuncNode>& func_, 
-				 std::shared_ptr<ScopeNode>& curScope_, std::vector<std::string>& args_) :
-			BaseNode(nodeType::CALL) name(name_), func(func_), curScope(curScope_), args(args_) {}
+		CallNode(const std::string& name_, 
+				 const std::shared_ptr<FuncNode>& func_, 
+				 const std::shared_ptr<ScopeNode>& curScope_, 
+				 const std::vector<double>& args_) :
+			BaseNode(nodeType::CALL), name(name_), func(func_), curScope(curScope_), args(args_) {}
+
+		CallNode(const std::string& name_, 
+				 const std::shared_ptr<FuncNode>& func_, 
+				 const std::shared_ptr<ScopeNode>& curScope_) :
+			BaseNode(nodeType::CALL), name(name_), func(func_), curScope(curScope_) {}
 		~CallNode() = default;
 
         std::shared_ptr<FuncNode> getFunc() const { return func; }
@@ -316,7 +334,7 @@ class RetNode final : public BaseNode
 		std::shared_ptr<BaseNode> expr = nullptr;
 
 	public:
-		RetNode(std::shared_ptr<BaseNode>& expr_) :
+		RetNode(const std::shared_ptr<BaseNode>& expr_) :
 			BaseNode(nodeType::RET), expr(expr_) {}
 		~RetNode() = default;
 

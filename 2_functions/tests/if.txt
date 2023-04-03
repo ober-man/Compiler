@@ -1,9 +1,14 @@
-scan(a);
-if(a % 2 == 0)
+func main()
 {
-	print(0);
-}
-if(a % 2 == 1)
-{
-	print(1);
+	var a;
+	scan(a);
+	if(a % 2 == 0)
+	{
+		print(0);
+	}
+	else
+	{
+		print(1);
+	}
+	return 0;
 }

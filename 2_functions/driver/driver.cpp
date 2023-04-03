@@ -18,9 +18,10 @@ Driver::Driver(const char* file_name)
         str.erase(remove(str.begin(), str.end(), '\t'), str.end());
         stmts.push_back(str);
     }
-/*
+
+    // do not delete this is crutial!!!
     input_file.clear();
-    input_file.seekg(0);*/
+    input_file.seekg(0);
 }
 
 void Driver::addStmt(std::shared_ptr<BaseNode>& node)
@@ -32,10 +33,10 @@ void Driver::addStmt(std::shared_ptr<BaseNode>& node)
 void Driver::start() const
 {
     auto symbolTable = globalScope->getTable();
-    for(auto&& decl : symbolTable)
+    for(auto&& [string, decl] : symbolTable)
         if(decl->getName() == "main")
         {
-            auto main = static_pointer_cast<DeclFuncNode>(decl);
+            auto main = std::static_pointer_cast<DeclFuncNode>(decl);
             auto scope = main->getScope();
             scope->visit();
         }

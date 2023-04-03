@@ -369,14 +369,28 @@ namespace yy {
       char dummy1[sizeof (double)];
 
       // program
+      // global_scope
+      // global_decl
+      // decl_func
+      // func_sign
+      // params
+      // args
+      // arg
+      // func_scope
+      // open_func
+      // func_stmts
+      // close_func
+      // return
       // stmts
       // stmt
       // scope
-      // open_sc
-      // close_sc
+      // open_scope
+      // close_scope
+      // decl
+      // decl_var
+      // call
       // assign
       // name
-      // exprs
       // expr
       // if_stmt
       // while_stmt
@@ -386,6 +400,7 @@ namespace yy {
       char dummy2[sizeof (std::shared_ptr<BaseNode>)];
 
       // ID
+      // param
       char dummy3[sizeof (std::string)];
     };
 
@@ -432,41 +447,45 @@ namespace yy {
       enum yytokentype
       {
         SEMICOLON = 258,
-        ADD = 259,
-        SUB = 260,
-        MUL = 261,
-        DIV = 262,
-        MOD = 263,
-        ASSIGN = 264,
-        INCR = 265,
-        DECR = 266,
-        NOT_EQUAL = 267,
-        EQUAL = 268,
-        LESS = 269,
-        GREATER = 270,
-        LESS_EQ = 271,
-        GREATER_EQ = 272,
-        AND = 273,
-        OR = 274,
-        NOT = 275,
-        LPARENTHESIS = 276,
-        RPARENTHESIS = 277,
-        LBRACE = 278,
-        RBRACE = 279,
-        LBRACKET = 280,
-        RBRACKET = 281,
-        QUEST_MARK = 282,
-        COLON = 283,
-        IF = 284,
-        THEN = 285,
+        COMMA = 259,
+        ADD = 260,
+        SUB = 261,
+        MUL = 262,
+        DIV = 263,
+        MOD = 264,
+        ASSIGN = 265,
+        INCR = 266,
+        DECR = 267,
+        NOT_EQUAL = 268,
+        EQUAL = 269,
+        LESS = 270,
+        GREATER = 271,
+        LESS_EQ = 272,
+        GREATER_EQ = 273,
+        AND = 274,
+        OR = 275,
+        NOT = 276,
+        LPAR = 277,
+        RPAR = 278,
+        LBRACE = 279,
+        RBRACE = 280,
+        LBRACKET = 281,
+        RBRACKET = 282,
+        QUEST_MARK = 283,
+        COLON = 284,
+        IF = 285,
         ELSE = 286,
         WHILE = 287,
         PRINT = 288,
         SCAN = 289,
-        FUNC = 290,
-        RETURN = 291,
-        ID = 292,
-        NUMBER = 293
+        BREAK = 290,
+        CONTINUE = 291,
+        FUNC = 292,
+        RETURN = 293,
+        VAR = 294,
+        ARRAY = 295,
+        ID = 296,
+        NUMBER = 297
       };
     };
 
@@ -582,29 +601,44 @@ namespace yy {
         // Type destructor.
 switch (yytype)
     {
-      case 38: // NUMBER
+      case 42: // NUMBER
         value.template destroy< double > ();
         break;
 
-      case 40: // program
-      case 41: // stmts
-      case 42: // stmt
-      case 43: // scope
-      case 44: // open_sc
-      case 45: // close_sc
-      case 46: // assign
-      case 47: // name
-      case 48: // exprs
-      case 49: // expr
-      case 50: // if_stmt
-      case 51: // while_stmt
-      case 52: // cond
-      case 53: // input
-      case 54: // output
+      case 44: // program
+      case 45: // global_scope
+      case 46: // global_decl
+      case 47: // decl_func
+      case 48: // func_sign
+      case 49: // params
+      case 51: // args
+      case 52: // arg
+      case 53: // func_scope
+      case 54: // open_func
+      case 55: // func_stmts
+      case 56: // close_func
+      case 57: // return
+      case 58: // stmts
+      case 59: // stmt
+      case 60: // scope
+      case 61: // open_scope
+      case 62: // close_scope
+      case 63: // decl
+      case 64: // decl_var
+      case 65: // call
+      case 66: // assign
+      case 67: // name
+      case 68: // expr
+      case 69: // if_stmt
+      case 70: // while_stmt
+      case 71: // cond
+      case 72: // input
+      case 73: // output
         value.template destroy< std::shared_ptr<BaseNode> > ();
         break;
 
-      case 37: // ID
+      case 41: // ID
+      case 50: // param
         value.template destroy< std::string > ();
         break;
 
@@ -684,13 +718,13 @@ switch (yytype)
       symbol_type (int tok, location_type l)
         : super_type(token_type (tok), std::move (l))
       {
-        YY_ASSERT (tok == 0 || tok == token::SEMICOLON || tok == token::ADD || tok == token::SUB || tok == token::MUL || tok == token::DIV || tok == token::MOD || tok == token::ASSIGN || tok == token::INCR || tok == token::DECR || tok == token::NOT_EQUAL || tok == token::EQUAL || tok == token::LESS || tok == token::GREATER || tok == token::LESS_EQ || tok == token::GREATER_EQ || tok == token::AND || tok == token::OR || tok == token::NOT || tok == token::LPARENTHESIS || tok == token::RPARENTHESIS || tok == token::LBRACE || tok == token::RBRACE || tok == token::LBRACKET || tok == token::RBRACKET || tok == token::QUEST_MARK || tok == token::COLON || tok == token::IF || tok == token::THEN || tok == token::ELSE || tok == token::WHILE || tok == token::PRINT || tok == token::SCAN || tok == token::FUNC || tok == token::RETURN);
+        YY_ASSERT (tok == 0 || tok == token::SEMICOLON || tok == token::COMMA || tok == token::ADD || tok == token::SUB || tok == token::MUL || tok == token::DIV || tok == token::MOD || tok == token::ASSIGN || tok == token::INCR || tok == token::DECR || tok == token::NOT_EQUAL || tok == token::EQUAL || tok == token::LESS || tok == token::GREATER || tok == token::LESS_EQ || tok == token::GREATER_EQ || tok == token::AND || tok == token::OR || tok == token::NOT || tok == token::LPAR || tok == token::RPAR || tok == token::LBRACE || tok == token::RBRACE || tok == token::LBRACKET || tok == token::RBRACKET || tok == token::QUEST_MARK || tok == token::COLON || tok == token::IF || tok == token::ELSE || tok == token::WHILE || tok == token::PRINT || tok == token::SCAN || tok == token::BREAK || tok == token::CONTINUE || tok == token::FUNC || tok == token::RETURN || tok == token::VAR || tok == token::ARRAY);
       }
 #else
       symbol_type (int tok, const location_type& l)
         : super_type(token_type (tok), l)
       {
-        YY_ASSERT (tok == 0 || tok == token::SEMICOLON || tok == token::ADD || tok == token::SUB || tok == token::MUL || tok == token::DIV || tok == token::MOD || tok == token::ASSIGN || tok == token::INCR || tok == token::DECR || tok == token::NOT_EQUAL || tok == token::EQUAL || tok == token::LESS || tok == token::GREATER || tok == token::LESS_EQ || tok == token::GREATER_EQ || tok == token::AND || tok == token::OR || tok == token::NOT || tok == token::LPARENTHESIS || tok == token::RPARENTHESIS || tok == token::LBRACE || tok == token::RBRACE || tok == token::LBRACKET || tok == token::RBRACKET || tok == token::QUEST_MARK || tok == token::COLON || tok == token::IF || tok == token::THEN || tok == token::ELSE || tok == token::WHILE || tok == token::PRINT || tok == token::SCAN || tok == token::FUNC || tok == token::RETURN);
+        YY_ASSERT (tok == 0 || tok == token::SEMICOLON || tok == token::COMMA || tok == token::ADD || tok == token::SUB || tok == token::MUL || tok == token::DIV || tok == token::MOD || tok == token::ASSIGN || tok == token::INCR || tok == token::DECR || tok == token::NOT_EQUAL || tok == token::EQUAL || tok == token::LESS || tok == token::GREATER || tok == token::LESS_EQ || tok == token::GREATER_EQ || tok == token::AND || tok == token::OR || tok == token::NOT || tok == token::LPAR || tok == token::RPAR || tok == token::LBRACE || tok == token::RBRACE || tok == token::LBRACKET || tok == token::RBRACKET || tok == token::QUEST_MARK || tok == token::COLON || tok == token::IF || tok == token::ELSE || tok == token::WHILE || tok == token::PRINT || tok == token::SCAN || tok == token::BREAK || tok == token::CONTINUE || tok == token::FUNC || tok == token::RETURN || tok == token::VAR || tok == token::ARRAY);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
@@ -769,6 +803,21 @@ switch (yytype)
       make_SEMICOLON (const location_type& l)
       {
         return symbol_type (token::SEMICOLON, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_COMMA (location_type l)
+      {
+        return symbol_type (token::COMMA, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_COMMA (const location_type& l)
+      {
+        return symbol_type (token::COMMA, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
@@ -1029,31 +1078,31 @@ switch (yytype)
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
-      make_LPARENTHESIS (location_type l)
+      make_LPAR (location_type l)
       {
-        return symbol_type (token::LPARENTHESIS, std::move (l));
+        return symbol_type (token::LPAR, std::move (l));
       }
 #else
       static
       symbol_type
-      make_LPARENTHESIS (const location_type& l)
+      make_LPAR (const location_type& l)
       {
-        return symbol_type (token::LPARENTHESIS, l);
+        return symbol_type (token::LPAR, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
-      make_RPARENTHESIS (location_type l)
+      make_RPAR (location_type l)
       {
-        return symbol_type (token::RPARENTHESIS, std::move (l));
+        return symbol_type (token::RPAR, std::move (l));
       }
 #else
       static
       symbol_type
-      make_RPARENTHESIS (const location_type& l)
+      make_RPAR (const location_type& l)
       {
-        return symbol_type (token::RPARENTHESIS, l);
+        return symbol_type (token::RPAR, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
@@ -1164,21 +1213,6 @@ switch (yytype)
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
-      make_THEN (location_type l)
-      {
-        return symbol_type (token::THEN, std::move (l));
-      }
-#else
-      static
-      symbol_type
-      make_THEN (const location_type& l)
-      {
-        return symbol_type (token::THEN, l);
-      }
-#endif
-#if 201103L <= YY_CPLUSPLUS
-      static
-      symbol_type
       make_ELSE (location_type l)
       {
         return symbol_type (token::ELSE, std::move (l));
@@ -1239,6 +1273,36 @@ switch (yytype)
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
+      make_BREAK (location_type l)
+      {
+        return symbol_type (token::BREAK, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_BREAK (const location_type& l)
+      {
+        return symbol_type (token::BREAK, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_CONTINUE (location_type l)
+      {
+        return symbol_type (token::CONTINUE, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_CONTINUE (const location_type& l)
+      {
+        return symbol_type (token::CONTINUE, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
       make_FUNC (location_type l)
       {
         return symbol_type (token::FUNC, std::move (l));
@@ -1264,6 +1328,36 @@ switch (yytype)
       make_RETURN (const location_type& l)
       {
         return symbol_type (token::RETURN, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_VAR (location_type l)
+      {
+        return symbol_type (token::VAR, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_VAR (const location_type& l)
+      {
+        return symbol_type (token::VAR, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_ARRAY (location_type l)
+      {
+        return symbol_type (token::ARRAY, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_ARRAY (const location_type& l)
+      {
+        return symbol_type (token::ARRAY, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
@@ -1336,7 +1430,7 @@ switch (yytype)
     // Tables.
     // YYPACT[STATE-NUM] -- Index in YYTABLE of the portion describing
     // STATE-NUM.
-    static const signed char yypact_[];
+    static const short yypact_[];
 
     // YYDEFACT[STATE-NUM] -- Default reduction number in state STATE-NUM.
     // Performed when YYTABLE does not specify something else to do.  Zero
@@ -1344,7 +1438,7 @@ switch (yytype)
     static const signed char yydefact_[];
 
     // YYPGOTO[NTERM-NUM].
-    static const signed char yypgoto_[];
+    static const short yypgoto_[];
 
     // YYDEFGOTO[NTERM-NUM].
     static const signed char yydefgoto_[];
@@ -1375,7 +1469,7 @@ switch (yytype)
     static const char* const yytname_[];
 #if YYDEBUG
     // YYRLINE[YYN] -- Source line where rule number YYN was defined.
-    static const unsigned char yyrline_[];
+    static const short yyrline_[];
     /// Report on the debug stream that the rule \a r is going to be reduced.
     virtual void yy_reduce_print_ (int r);
     /// Print the state stack on the debug stream.
@@ -1602,10 +1696,10 @@ switch (yytype)
     enum
     {
       yyeof_ = 0,
-      yylast_ = 119,     ///< Last index in yytable_.
-      yynnts_ = 16,  ///< Number of nonterminal symbols.
-      yyfinal_ = 22, ///< Termination state number.
-      yyntokens_ = 39  ///< Number of tokens.
+      yylast_ = 168,     ///< Last index in yytable_.
+      yynnts_ = 31,  ///< Number of nonterminal symbols.
+      yyfinal_ = 11, ///< Termination state number.
+      yyntokens_ = 43  ///< Number of tokens.
     };
 
 
@@ -1615,7 +1709,7 @@ switch (yytype)
 
 
 } // yy
-#line 1619 "grammar.tab.hh"
+#line 1713 "grammar.tab.hh"
 
 
 

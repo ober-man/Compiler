@@ -1,12 +1,19 @@
-scan(a);
-scan(b);
-
-if((a && 1) || (!b))
+func main()
 {
-	print(1);
-}
+	var a;
+	var b;
+	scan(a);
+	scan(b);
 
-if(!a)
-{
-	print(0);
+	if((a && 1) || (!b))
+	{
+		print(1);
+	}
+
+	if(!a)
+	{
+		print(0);
+	}
+	
+	return 0;
 }

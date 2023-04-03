@@ -37,7 +37,7 @@ double ScopeNode::visit() const
 double IfNode::visit() const
 {
 	printGraph("start if-stmt");
-	if(scope->getType() != nodeType::SCOPE)
+	if(scope->getNodeType() != nodeType::SCOPE)
 		throw std::runtime_error("Error: wrong action\n");
 	if(cond->visit())
 		scope->visit();
@@ -52,7 +52,7 @@ double IfNode::visit() const
 double WhileNode::visit() const
 {
 	printGraph("start while-stmt");
-	if(scope->getType() != nodeType::SCOPE)
+	if(scope->getNodeType() != nodeType::SCOPE)
 		throw std::runtime_error("Error: wrong action\n");
 	while(cond->visit())
 		scope->visit();
@@ -74,11 +74,11 @@ double BinOpNode::visit() const
 			return left->visit() + right->visit();
 
 		case binOpType::SUB:
-			printGraph("SUB" << std::endl;
+			printGraph("SUB");
 			return left->visit() - right->visit();
 
 		case binOpType::MUL:
-			printGraph("MUL" << std::endl;
+			printGraph("MUL");
 			return left->visit() * right->visit();
 
 		case binOpType::DIV:
@@ -101,7 +101,7 @@ double BinOpNode::visit() const
 
 		case binOpType::ASSIGN:
 		{
-			if(left->getType() != nodeType::ID)
+			if(left->getNodeType() != nodeType::ID)
 				throw std::runtime_error("Error: assigning not to the variable\n");
 			printGraph("ASSIGN");
 			auto var = std::static_pointer_cast<VarNode>(left);
@@ -170,7 +170,7 @@ double UnOpNode::visit() const
 
 		case unOpType::SCAN:
 		{
-			if(expr->getType() != nodeType::ID)
+			if(expr->getNodeType() != nodeType::ID)
 				throw std::runtime_error("Error: scanning not to the variable\n");
 			printGraph("SCAN");
 
@@ -187,47 +187,74 @@ double UnOpNode::visit() const
 	}
 }
 
+//////////////////////////////////////////////////////////////////_FUNC_NODE_//////////////////////////////////////////////////////////////////
+
+std::string FuncNode::getFuncName() const 					
+{ 
+	return decl.lock()->getName(); 
+}
+
+auto FuncNode::getFuncArgs() const
+{ 
+	return decl.lock()->getFuncArgs(); 
+}
+
 //////////////////////////////////////////////////////////////////_CALL_NODE_//////////////////////////////////////////////////////////////////
 
 double CallNode::visit() const
 {
+	printGraph("call func %s", func->getFuncName());
     auto&& func_scope = func->getScope();
     auto&& params = func->getFuncArgs();
+    int arg_num = 0;
 
     if(args.size() != params.size())
-    	throw std::runtime_error("Error: incorrect number of function parameters\n");
-
-    for(auto&& arg : args)
     {
-    	auto var_decl = static_pointer_cast<DeclVarNode>(curScope->find(arg));
-    	double val = decl->getValue();
-
-    	auto var_node = std::make_shared<VarNode>(arg, val);
-        auto param = std::make_shared<DeclVarNode>(arg, var_node);
-        func_scope->insertName(arg, param);
+    	std::cout << "error while visiting call of func " << name << std::endl;
+    	std::cout << "size of args = " << args.size() << ", expected size = " << params.size() << std::endl;
+    	throw std::runtime_error("Error: incorrect number of function parameters");
     }
 
-    return scope->visit();
+    if(args.size() == 0)
+    	return func_scope->visit();
+
+    for(auto&& param_name : params)
+    {
+    	double arg_val = args[arg_num];
+
+    	auto cur_param = func_scope->findInThisScope(param_name);
+    	if(cur_param == nullptr)
+    		throw std::runtime_error("Error: incorrect function parameter\n");
+
+    	auto param_decl = std::static_pointer_cast<DeclVarNode>(cur_param);
+    	param_decl->setValue(arg_val);
+        ++arg_num;
+    }
+
+    return func_scope->visit();
 }
 
 //////////////////////////////////////////////////////////////////_RET_NODE_//////////////////////////////////////////////////////////////////
 
 double RetNode::visit() const
 {
+	printGraph("return expr");
 	auto type = expr->getNodeType();
-	if(type != BINOP || type != UNOP || type != CONST || type != ID || type != CALL)
-		throw std::runtime_error("Error: bad return expression\n");
-	else if(type == BINOP)
+	if(type != nodeType::BINOP && type != nodeType::UNOP && type != nodeType::CONST &&
+	   type != nodeType::ID && type != nodeType::CALL)
+		throw std::runtime_error("Error: bad type of return expression\n");
+
+	else if(type == nodeType::BINOP)
 	{
 		auto oper_type = static_pointer_cast<BinOpNode>(expr)->getOperType();
-		if(oper_type == ASSIGN)
-			throw std::runtime_error("Error: bad return expression\n");
+		if(oper_type == binOpType::ASSIGN)
+			throw std::runtime_error("Error: bad binop type of return expression\n");
 	}
-	else if(type == UNOP)
+	else if(type == nodeType::UNOP)
 	{
-		auto oper_type = static_pointer_cast<BinOpNode>(expr)->getOperType();
-		if(oper_type != NOT)
-			throw std::runtime_error("Error: bad return expression\n");
+		auto oper_type = static_pointer_cast<UnOpNode>(expr)->getOperType();
+		if(oper_type != unOpType::NOT)
+			throw std::runtime_error("Error: bad unop type of return expression\n");
 	}
     return expr->visit();
 }

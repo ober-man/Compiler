@@ -12,7 +12,6 @@ int main(int argc, char* argv[])
     }
 
     Driver driver(argv[1]);
-    //Driver driver("scope.txt");
     try 
     {
         driver.parse();
