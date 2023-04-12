@@ -1398,7 +1398,7 @@ switch (yytype)
     parser& operator= (const parser&);
 
     /// Stored state numbers (used for stacks).
-    typedef signed char state_type;
+    typedef unsigned char state_type;
 
     /// Generate an error message.
     /// \param yystate   the state where the error occurred.
@@ -1446,7 +1446,7 @@ switch (yytype)
     // YYTABLE[YYPACT[STATE-NUM]] -- What to do in state STATE-NUM.  If
     // positive, shift that token.  If negative, reduce the rule whose
     // number is the opposite.  If YYTABLE_NINF, syntax error.
-    static const signed char yytable_[];
+    static const unsigned char yytable_[];
 
     static const signed char yycheck_[];
 
@@ -1696,7 +1696,7 @@ switch (yytype)
     enum
     {
       yyeof_ = 0,
-      yylast_ = 168,     ///< Last index in yytable_.
+      yylast_ = 170,     ///< Last index in yytable_.
       yynnts_ = 31,  ///< Number of nonterminal symbols.
       yyfinal_ = 11, ///< Termination state number.
       yyntokens_ = 43  ///< Number of tokens.

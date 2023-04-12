@@ -7,6 +7,8 @@
 #include <exception>
 #include <memory>
 #include <optional>
+#include <cmath>
+#include <cassert>
 
 //#define PRINT_GRAPH
 
@@ -89,6 +91,7 @@ class ScopeNode final: public BaseNode
 		void addStmt(std::shared_ptr<BaseNode>& stmt)                          { stmts.push_back(stmt); }
 		auto getPrev() const					                               { return prev; }
 		auto getTable() const 												   { return table; }
+		auto getStmts() const 												   { return stmts; }
 		double visit() const override;
 };
 
@@ -225,7 +228,7 @@ class DeclVarNode final : public DeclNode
         auto getValue() const 				 { return node->getValue(); }
         void setValue(double value)			 { node->setValue(value); }
         varType getVarType() const    		 { return var_type; }
-		double visit() const override 		 { printGraph("decl var %s\n", name); return 0; }
+		double visit() const override 		 { printGraph("decl var %s\n", name); return NAN; }
 };
 
 #ifdef ARRAY_SUPPORTED
@@ -269,9 +272,11 @@ class FuncNode final : public BaseNode
 		~FuncNode() = default;
 
 		std::string getFuncName() const;
-		auto getFuncArgs() const;
-		auto getScope() const 						{ return scope; }
-		double visit() const override				{ printGraph("func %s\n", getFuncName()); return 0; }
+		auto getFuncParams() const;
+		auto getScope() const 							  { return scope; }
+		void setScope(std::shared_ptr<ScopeNode>& scope_) { scope = scope_; }
+		bool isDefined() const;
+		double visit() const override					  { printGraph("func %s\n", getFuncName()); return NAN; }
 };
 
 /// TODO: bool ret <- types
@@ -279,25 +284,25 @@ class DeclFuncNode final : public DeclNode
 {
     private:
 		std::string funcname;
-		std::vector<std::string> args;
+		std::vector<std::string> params;
 		std::shared_ptr<FuncNode> func = nullptr;
 		bool defined = false;
 
 	public:
 		DeclFuncNode(const std::string& funcname_, 
-					 const std::vector<std::string>& args_ = {}) :
-            DeclNode(exprType::FUNC), funcname(funcname_), args(args_) {}
+					 const std::vector<std::string>& params_ = {}) :
+            DeclNode(exprType::FUNC), funcname(funcname_), params(params_) {}
 		~DeclFuncNode() = default;
 
         std::string getName() const override               { return funcname; }
-        auto getFuncArgs() const       					   { return args; }
+        auto getFuncParams() const       				   { return params; }
         auto getFuncNode() const                           { return func; }
         auto getScope() const 							   { return func->getScope(); }
         bool isDefined() const                             { return defined; }
 
         void defineFunc()                                  { defined = true; }
         void setFuncNode(std::shared_ptr<FuncNode>& func_) { func = func_; }
-		double visit() const override					   { printGraph("decl func %s\n", funcname); return 0; }
+		double visit() const override					   { printGraph("decl func %s\n", funcname); return NAN; }
 };
 
 /// TODO: make string_view
@@ -306,25 +311,22 @@ class CallNode final : public BaseNode
 {
     private:
 		std::string name;
-		std::shared_ptr<FuncNode> func;
+		bool isRecursive = false;
+		mutable std::shared_ptr<FuncNode> func;
 		std::shared_ptr<ScopeNode> curScope;
-		std::vector<double> args;
+		std::vector<std::shared_ptr<BaseNode>> args;
 
 	public:
-		CallNode(const std::string& name_, 
+		CallNode(const std::string& name_, bool isRecursive_,
 				 const std::shared_ptr<FuncNode>& func_, 
 				 const std::shared_ptr<ScopeNode>& curScope_, 
-				 const std::vector<double>& args_) :
-			BaseNode(nodeType::CALL), name(name_), func(func_), curScope(curScope_), args(args_) {}
-
-		CallNode(const std::string& name_, 
-				 const std::shared_ptr<FuncNode>& func_, 
-				 const std::shared_ptr<ScopeNode>& curScope_) :
-			BaseNode(nodeType::CALL), name(name_), func(func_), curScope(curScope_) {}
+				 const std::vector<std::shared_ptr<BaseNode>>& args_ = {}) :
+			BaseNode(nodeType::CALL), name(name_), isRecursive(isRecursive_), func(func_), curScope(curScope_), args(args_) {}
 		~CallNode() = default;
 
-        std::shared_ptr<FuncNode> getFunc() const { return func; }
-        std::string getFuncName() const           { return name; }
+        std::shared_ptr<FuncNode> getFunc() const 				  { return func; }
+        std::string getFuncName() const           				  { return name; }
+        void setFuncNode(const std::shared_ptr<FuncNode>& func_)  { func = func_; }
 		double visit() const override;
 };
 

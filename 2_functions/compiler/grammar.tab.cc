@@ -989,13 +989,13 @@ namespace yy {
 
   case 3:
 #line 129 "grammar.y"
-                                                    { yylhs.value.as < std::shared_ptr<BaseNode> > () = yystack_[0].value.as < std::shared_ptr<BaseNode> > (); }
+                                                    { driver->addStmt(yystack_[0].value.as < std::shared_ptr<BaseNode> > ()); }
 #line 994 "grammar.tab.cc"
     break;
 
   case 4:
 #line 130 "grammar.y"
-                                                    { yylhs.value.as < std::shared_ptr<BaseNode> > () = yystack_[0].value.as < std::shared_ptr<BaseNode> > (); }
+                                                    { driver->addStmt(yystack_[0].value.as < std::shared_ptr<BaseNode> > ()); }
 #line 1000 "grammar.tab.cc"
     break;
 
@@ -1033,198 +1033,222 @@ namespace yy {
                                                     {
                                                         // just declaration without definition
                                                         yylhs.value.as < std::shared_ptr<BaseNode> > () = yystack_[1].value.as < std::shared_ptr<BaseNode> > ();
+                                                        driver->clearParams();
+                                                        driver->setCurFunction("global");
                                                     }
-#line 1038 "grammar.tab.cc"
+#line 1040 "grammar.tab.cc"
     break;
 
   case 9:
-#line 155 "grammar.y"
-                                                    {
+#line 157 "grammar.y"
+                                                     {
+                                                        driver->setCurFunction(yystack_[3].value.as < std::string > ());
                                                         auto node = driver->find(yystack_[3].value.as < std::string > ());
                                                         if(node != nullptr && node->getExprType() == exprType::FUNC)
                                                         {
                                                             auto func_node = std::static_pointer_cast<DeclFuncNode>(node);
                                                             if(func_node->isDefined()) // ODR violation
                                                                 throw std::runtime_error("Error: redeclaration of function\n");
-                                                        } // TODO: handle case var name = func name
-
-                                                        auto new_node = std::make_shared<DeclFuncNode>(yystack_[3].value.as < std::string > (), driver->getFuncArgs());
-                                                        driver->insertName(yystack_[3].value.as < std::string > (), new_node);
-                                                        yylhs.value.as < std::shared_ptr<BaseNode> > () = new_node;
+                                                            else
+                                                                yylhs.value.as < std::shared_ptr<BaseNode> > () = node;
+                                                        }
+                                                        else
+                                                        {
+                                                            auto new_node = std::make_shared<DeclFuncNode>(yystack_[3].value.as < std::string > (), driver->getFuncParams());
+                                                            driver->insertName(yystack_[3].value.as < std::string > (), new_node);
+                                                            yylhs.value.as < std::shared_ptr<BaseNode> > () = new_node;
+                                                        }
                                                     }
-#line 1056 "grammar.tab.cc"
+#line 1063 "grammar.tab.cc"
     break;
 
   case 10:
-#line 170 "grammar.y"
-                                                    { driver->insertFuncArg(yystack_[0].value.as < std::string > ()); }
-#line 1062 "grammar.tab.cc"
+#line 175 "grammar.y"
+                                                    {
+                                                        auto node = driver->find(yystack_[2].value.as < std::string > ());
+                                                        if(node != nullptr && node->getExprType() == exprType::FUNC)
+                                                        {
+                                                            auto func_node = std::static_pointer_cast<DeclFuncNode>(node);
+                                                            if(func_node->isDefined()) // ODR violation
+                                                                throw std::runtime_error("Error: redeclaration of function\n");
+                                                            else
+                                                                yylhs.value.as < std::shared_ptr<BaseNode> > () = node;
+                                                        }
+                                                        else
+                                                        {
+                                                            auto new_node = std::make_shared<DeclFuncNode>(yystack_[2].value.as < std::string > ());
+                                                            driver->insertName(yystack_[2].value.as < std::string > (), new_node);
+                                                            yylhs.value.as < std::shared_ptr<BaseNode> > () = new_node;
+                                                        }
+                                                    }
+#line 1085 "grammar.tab.cc"
     break;
 
   case 11:
-#line 171 "grammar.y"
-                                                    { driver->insertFuncArg(yystack_[0].value.as < std::string > ()); }
-#line 1068 "grammar.tab.cc"
+#line 194 "grammar.y"
+                                                    { driver->insertFuncParam(yystack_[0].value.as < std::string > ()); }
+#line 1091 "grammar.tab.cc"
     break;
 
   case 12:
-#line 172 "grammar.y"
-                                                    {}
-#line 1074 "grammar.tab.cc"
+#line 195 "grammar.y"
+                                                    { driver->insertFuncParam(yystack_[2].value.as < std::string > ()); }
+#line 1097 "grammar.tab.cc"
     break;
 
   case 13:
-#line 175 "grammar.y"
+#line 198 "grammar.y"
                                                     { yylhs.value.as < std::string > () = yystack_[0].value.as < std::string > (); }
-#line 1080 "grammar.tab.cc"
+#line 1103 "grammar.tab.cc"
     break;
 
   case 14:
-#line 178 "grammar.y"
+#line 201 "grammar.y"
                                                     { yylhs.value.as < std::shared_ptr<BaseNode> > () = yystack_[0].value.as < std::shared_ptr<BaseNode> > (); }
-#line 1086 "grammar.tab.cc"
+#line 1109 "grammar.tab.cc"
     break;
 
   case 15:
-#line 181 "grammar.y"
+#line 204 "grammar.y"
                                                     { 
                                                         auto scope = std::make_shared<ScopeNode>(driver->getGlobalScope());
                                                         driver->setScope(scope);
 
-                                                        auto&& args = driver->getFuncArgs();
-                                                        for(auto&& arg : args)
+                                                        auto&& params = driver->getFuncParams();
+                                                        for(auto&& param : params)
                                                         {
-                                                            auto var_node = std::make_shared<VarNode>(arg);
-                                                            auto param = std::make_shared<DeclVarNode>(arg, var_node);
-                                                            scope->insert(arg, param);
+                                                            auto var_node = std::make_shared<VarNode>(param);
+                                                            auto decl_node = std::make_shared<DeclVarNode>(param, var_node);
+                                                            scope->insert(param, decl_node);
                                                         }
-                                                        driver->clearArgs();
+                                                        driver->clearParams();
                                                     }
-#line 1104 "grammar.tab.cc"
+#line 1127 "grammar.tab.cc"
     break;
 
   case 16:
-#line 196 "grammar.y"
+#line 219 "grammar.y"
                                                     { yylhs.value.as < std::shared_ptr<BaseNode> > () = yystack_[0].value.as < std::shared_ptr<BaseNode> > (); }
-#line 1110 "grammar.tab.cc"
+#line 1133 "grammar.tab.cc"
     break;
 
   case 17:
-#line 197 "grammar.y"
+#line 220 "grammar.y"
                                                     {}
-#line 1116 "grammar.tab.cc"
+#line 1139 "grammar.tab.cc"
     break;
 
   case 18:
-#line 199 "grammar.y"
+#line 222 "grammar.y"
                                                     { 
                                                         yylhs.value.as < std::shared_ptr<BaseNode> > () = driver->getScope();
-                                                        driver->setScope(driver->getGlobalScope()); 
+                                                        driver->setScope(driver->getGlobalScope());
+                                                        driver->setCurFunction("global");
                                                     }
-#line 1125 "grammar.tab.cc"
-    break;
-
-  case 19:
-#line 205 "grammar.y"
-                                                    { yylhs.value.as < std::shared_ptr<BaseNode> > () = std::make_shared<RetNode>(yystack_[1].value.as < std::shared_ptr<BaseNode> > ()); }
-#line 1131 "grammar.tab.cc"
-    break;
-
-  case 20:
-#line 208 "grammar.y"
-                                                    { driver->addStmt(yystack_[0].value.as < std::shared_ptr<BaseNode> > ()); }
-#line 1137 "grammar.tab.cc"
-    break;
-
-  case 21:
-#line 209 "grammar.y"
-                                                    { driver->addStmt(yystack_[0].value.as < std::shared_ptr<BaseNode> > ()); }
-#line 1143 "grammar.tab.cc"
-    break;
-
-  case 22:
-#line 213 "grammar.y"
-                                                    { yylhs.value.as < std::shared_ptr<BaseNode> > () = yystack_[0].value.as < std::shared_ptr<BaseNode> > (); }
 #line 1149 "grammar.tab.cc"
     break;
 
-  case 23:
-#line 214 "grammar.y"
-                                                    { yylhs.value.as < std::shared_ptr<BaseNode> > () = yystack_[0].value.as < std::shared_ptr<BaseNode> > (); }
+  case 19:
+#line 229 "grammar.y"
+                                                    { yylhs.value.as < std::shared_ptr<BaseNode> > () = std::make_shared<RetNode>(yystack_[1].value.as < std::shared_ptr<BaseNode> > ()); }
 #line 1155 "grammar.tab.cc"
     break;
 
-  case 24:
-#line 215 "grammar.y"
-                                                    { yylhs.value.as < std::shared_ptr<BaseNode> > () = yystack_[1].value.as < std::shared_ptr<BaseNode> > (); }
+  case 20:
+#line 232 "grammar.y"
+                                                    { driver->addStmt(yystack_[0].value.as < std::shared_ptr<BaseNode> > ()); }
 #line 1161 "grammar.tab.cc"
     break;
 
-  case 25:
-#line 216 "grammar.y"
-                                                    { yylhs.value.as < std::shared_ptr<BaseNode> > () = yystack_[0].value.as < std::shared_ptr<BaseNode> > (); }
+  case 21:
+#line 233 "grammar.y"
+                                                    { driver->addStmt(yystack_[0].value.as < std::shared_ptr<BaseNode> > ()); }
 #line 1167 "grammar.tab.cc"
     break;
 
-  case 26:
-#line 217 "grammar.y"
+  case 22:
+#line 237 "grammar.y"
                                                     { yylhs.value.as < std::shared_ptr<BaseNode> > () = yystack_[0].value.as < std::shared_ptr<BaseNode> > (); }
 #line 1173 "grammar.tab.cc"
     break;
 
-  case 27:
-#line 218 "grammar.y"
+  case 23:
+#line 238 "grammar.y"
                                                     { yylhs.value.as < std::shared_ptr<BaseNode> > () = yystack_[0].value.as < std::shared_ptr<BaseNode> > (); }
 #line 1179 "grammar.tab.cc"
     break;
 
-  case 28:
-#line 219 "grammar.y"
-                                                    { yylhs.value.as < std::shared_ptr<BaseNode> > () = yystack_[0].value.as < std::shared_ptr<BaseNode> > (); }
+  case 24:
+#line 239 "grammar.y"
+                                                    { yylhs.value.as < std::shared_ptr<BaseNode> > () = yystack_[1].value.as < std::shared_ptr<BaseNode> > (); }
 #line 1185 "grammar.tab.cc"
     break;
 
-  case 29:
-#line 220 "grammar.y"
+  case 25:
+#line 240 "grammar.y"
                                                     { yylhs.value.as < std::shared_ptr<BaseNode> > () = yystack_[0].value.as < std::shared_ptr<BaseNode> > (); }
 #line 1191 "grammar.tab.cc"
     break;
 
-  case 30:
-#line 221 "grammar.y"
+  case 26:
+#line 241 "grammar.y"
                                                     { yylhs.value.as < std::shared_ptr<BaseNode> > () = yystack_[0].value.as < std::shared_ptr<BaseNode> > (); }
 #line 1197 "grammar.tab.cc"
     break;
 
-  case 31:
-#line 226 "grammar.y"
+  case 27:
+#line 242 "grammar.y"
                                                     { yylhs.value.as < std::shared_ptr<BaseNode> > () = yystack_[0].value.as < std::shared_ptr<BaseNode> > (); }
 #line 1203 "grammar.tab.cc"
     break;
 
-  case 32:
-#line 229 "grammar.y"
-                                                    { driver->setScope(std::make_shared<ScopeNode>(driver->getScope())); }
+  case 28:
+#line 243 "grammar.y"
+                                                    { yylhs.value.as < std::shared_ptr<BaseNode> > () = yystack_[0].value.as < std::shared_ptr<BaseNode> > (); }
 #line 1209 "grammar.tab.cc"
     break;
 
+  case 29:
+#line 244 "grammar.y"
+                                                    { yylhs.value.as < std::shared_ptr<BaseNode> > () = yystack_[0].value.as < std::shared_ptr<BaseNode> > (); }
+#line 1215 "grammar.tab.cc"
+    break;
+
+  case 30:
+#line 245 "grammar.y"
+                                                    { yylhs.value.as < std::shared_ptr<BaseNode> > () = yystack_[0].value.as < std::shared_ptr<BaseNode> > (); }
+#line 1221 "grammar.tab.cc"
+    break;
+
+  case 31:
+#line 250 "grammar.y"
+                                                    { yylhs.value.as < std::shared_ptr<BaseNode> > () = yystack_[0].value.as < std::shared_ptr<BaseNode> > (); }
+#line 1227 "grammar.tab.cc"
+    break;
+
+  case 32:
+#line 253 "grammar.y"
+                                                    { driver->setScope(std::make_shared<ScopeNode>(driver->getScope())); }
+#line 1233 "grammar.tab.cc"
+    break;
+
   case 33:
-#line 232 "grammar.y"
+#line 256 "grammar.y"
                                                     {
                                                         yylhs.value.as < std::shared_ptr<BaseNode> > () = driver->getScope();
                                                         driver->setPrevScope();
                                                     }
-#line 1218 "grammar.tab.cc"
+#line 1242 "grammar.tab.cc"
     break;
 
   case 34:
-#line 238 "grammar.y"
+#line 262 "grammar.y"
                                                     { yylhs.value.as < std::shared_ptr<BaseNode> > () = yystack_[0].value.as < std::shared_ptr<BaseNode> > (); }
-#line 1224 "grammar.tab.cc"
+#line 1248 "grammar.tab.cc"
     break;
 
   case 35:
-#line 241 "grammar.y"
+#line 265 "grammar.y"
                                                     {
                                                         auto node = driver->findInCurrentScope(yystack_[1].value.as < std::string > ());
                                                         if(node != nullptr) // ODR violation
@@ -1238,11 +1262,11 @@ namespace yy {
                                                         driver->insertName(yystack_[1].value.as < std::string > (), decl_node);
                                                         yylhs.value.as < std::shared_ptr<BaseNode> > () = decl_node;
                                                     }
-#line 1242 "grammar.tab.cc"
+#line 1266 "grammar.tab.cc"
     break;
 
   case 36:
-#line 254 "grammar.y"
+#line 278 "grammar.y"
                                                     {
                                                         auto node = driver->findInCurrentScope(yystack_[3].value.as < std::string > ());
                                                         if(node != nullptr) // ODR violation
@@ -1257,66 +1281,74 @@ namespace yy {
 
                                                         yylhs.value.as < std::shared_ptr<BaseNode> > () = std::make_shared<BinOpNode>(var_node, binOpType::ASSIGN, yystack_[1].value.as < std::shared_ptr<BaseNode> > ());
                                                     }
-#line 1261 "grammar.tab.cc"
+#line 1285 "grammar.tab.cc"
     break;
 
   case 37:
-#line 270 "grammar.y"
+#line 294 "grammar.y"
                                                     {
                                                         auto node = driver->findInGlobalScope(yystack_[3].value.as < std::string > ());
                                                         if(node == nullptr || node->getExprType() != exprType::FUNC)
                                                             throw std::runtime_error("Error: calling unknown function\n");
 
-                                                        auto func_decl = static_pointer_cast<DeclFuncNode>(node);
+                                                        auto func_decl = std::static_pointer_cast<DeclFuncNode>(node);
                                                         auto&& func_args = driver->getFuncArgs();
 
-                                                        yylhs.value.as < std::shared_ptr<BaseNode> > () = std::make_shared<CallNode>(yystack_[3].value.as < std::string > (), func_decl->getFuncNode(), 
+                                                        bool isRecursive = false;
+                                                        if(yystack_[3].value.as < std::string > () == driver->getCurFunction())
+                                                            isRecursive = true;
+
+                                                        yylhs.value.as < std::shared_ptr<BaseNode> > () = std::make_shared<CallNode>(yystack_[3].value.as < std::string > (), isRecursive, func_decl->getFuncNode(), 
                                                                                         driver->getScope(), func_args);
-                                                        driver->clearArgs();    
+                                                        driver->clearArgs();
                                                     }
-#line 1278 "grammar.tab.cc"
+#line 1306 "grammar.tab.cc"
     break;
 
   case 38:
-#line 282 "grammar.y"
+#line 310 "grammar.y"
                                                     {
                                                         auto node = driver->findInGlobalScope(yystack_[2].value.as < std::string > ());
                                                         if(node == nullptr || node->getExprType() != exprType::FUNC)
                                                             throw std::runtime_error("Error: calling unknown function\n");
 
-                                                        auto func_decl = static_pointer_cast<DeclFuncNode>(node);
-                                                        yylhs.value.as < std::shared_ptr<BaseNode> > () = std::make_shared<CallNode>(yystack_[2].value.as < std::string > (), func_decl->getFuncNode(), 
+                                                        bool isRecursive = false;
+                                                        if(yystack_[2].value.as < std::string > () == driver->getCurFunction())
+                                                            isRecursive = true;
+
+                                                        auto func_decl = std::static_pointer_cast<DeclFuncNode>(node);
+                                                        yylhs.value.as < std::shared_ptr<BaseNode> > () = std::make_shared<CallNode>(yystack_[2].value.as < std::string > (), isRecursive, func_decl->getFuncNode(), 
                                                                                         driver->getScope());
                                                     }
-#line 1292 "grammar.tab.cc"
+#line 1324 "grammar.tab.cc"
     break;
 
   case 39:
-#line 293 "grammar.y"
+#line 325 "grammar.y"
                                                     { driver->insertFuncArg(yystack_[0].value.as < std::shared_ptr<BaseNode> > ()); }
-#line 1298 "grammar.tab.cc"
+#line 1330 "grammar.tab.cc"
     break;
 
   case 40:
-#line 294 "grammar.y"
+#line 326 "grammar.y"
                                                     { driver->insertFuncArg(yystack_[2].value.as < std::shared_ptr<BaseNode> > ()); }
-#line 1304 "grammar.tab.cc"
+#line 1336 "grammar.tab.cc"
     break;
 
   case 41:
-#line 297 "grammar.y"
+#line 329 "grammar.y"
                                                     { yylhs.value.as < std::shared_ptr<BaseNode> > () = yystack_[0].value.as < std::shared_ptr<BaseNode> > (); }
-#line 1310 "grammar.tab.cc"
+#line 1342 "grammar.tab.cc"
     break;
 
   case 42:
-#line 300 "grammar.y"
-                                                   { yylhs.value.as < std::shared_ptr<BaseNode> > () = std::make_shared<BinOpNode>(yystack_[3].value.as < std::shared_ptr<BaseNode> > (), binOpType::ASSIGN, yystack_[1].value.as < std::shared_ptr<BaseNode> > ()); }
-#line 1316 "grammar.tab.cc"
+#line 332 "grammar.y"
+                                                    { yylhs.value.as < std::shared_ptr<BaseNode> > () = std::make_shared<BinOpNode>(yystack_[3].value.as < std::shared_ptr<BaseNode> > (), binOpType::ASSIGN, yystack_[1].value.as < std::shared_ptr<BaseNode> > ()); }
+#line 1348 "grammar.tab.cc"
     break;
 
   case 43:
-#line 303 "grammar.y"
+#line 335 "grammar.y"
                                                     {
                                                         auto node = driver->find(yystack_[0].value.as < std::string > ());
                                                         if(node == nullptr)
@@ -1325,42 +1357,42 @@ namespace yy {
                                                             throw std::runtime_error("Error: name is not a variable\n");
                                                         yylhs.value.as < std::shared_ptr<BaseNode> > () = std::static_pointer_cast<DeclVarNode>(node)->getVarNode();
                                                     }
-#line 1329 "grammar.tab.cc"
+#line 1361 "grammar.tab.cc"
     break;
 
   case 44:
-#line 317 "grammar.y"
+#line 345 "grammar.y"
                                                     { yylhs.value.as < std::shared_ptr<BaseNode> > () = std::make_shared<BinOpNode>(yystack_[2].value.as < std::shared_ptr<BaseNode> > (), binOpType::ADD, yystack_[0].value.as < std::shared_ptr<BaseNode> > ()); }
-#line 1335 "grammar.tab.cc"
+#line 1367 "grammar.tab.cc"
     break;
 
   case 45:
-#line 318 "grammar.y"
+#line 346 "grammar.y"
                                                     { yylhs.value.as < std::shared_ptr<BaseNode> > () = std::make_shared<BinOpNode>(yystack_[2].value.as < std::shared_ptr<BaseNode> > (), binOpType::SUB, yystack_[0].value.as < std::shared_ptr<BaseNode> > ()); }
-#line 1341 "grammar.tab.cc"
+#line 1373 "grammar.tab.cc"
     break;
 
   case 46:
-#line 319 "grammar.y"
+#line 347 "grammar.y"
                                                     { yylhs.value.as < std::shared_ptr<BaseNode> > () = std::make_shared<BinOpNode>(yystack_[2].value.as < std::shared_ptr<BaseNode> > (), binOpType::MUL, yystack_[0].value.as < std::shared_ptr<BaseNode> > ()); }
-#line 1347 "grammar.tab.cc"
+#line 1379 "grammar.tab.cc"
     break;
 
   case 47:
-#line 320 "grammar.y"
+#line 348 "grammar.y"
                                                     { yylhs.value.as < std::shared_ptr<BaseNode> > () = std::make_shared<BinOpNode>(yystack_[2].value.as < std::shared_ptr<BaseNode> > (), binOpType::DIV, yystack_[0].value.as < std::shared_ptr<BaseNode> > ()); }
-#line 1353 "grammar.tab.cc"
+#line 1385 "grammar.tab.cc"
     break;
 
   case 48:
-#line 321 "grammar.y"
+#line 349 "grammar.y"
                                                     { yylhs.value.as < std::shared_ptr<BaseNode> > () = std::make_shared<BinOpNode>(yystack_[2].value.as < std::shared_ptr<BaseNode> > (), binOpType::MOD, yystack_[0].value.as < std::shared_ptr<BaseNode> > ()); }
-#line 1359 "grammar.tab.cc"
+#line 1391 "grammar.tab.cc"
     break;
 
   case 49:
-#line 322 "grammar.y"
-                                                    {
+#line 350 "grammar.y"
+                                                    {   
                                                         auto decl_node = driver->find(yystack_[0].value.as < std::string > ());
                                                         if(decl_node == nullptr)
                                                         {
@@ -1370,125 +1402,125 @@ namespace yy {
                                                         auto var_node = std::static_pointer_cast<DeclVarNode>(decl_node);
                                                         yylhs.value.as < std::shared_ptr<BaseNode> > () = var_node->getVarNode();
                                                     }
-#line 1374 "grammar.tab.cc"
+#line 1406 "grammar.tab.cc"
     break;
 
   case 50:
-#line 332 "grammar.y"
+#line 360 "grammar.y"
                                                     { yylhs.value.as < std::shared_ptr<BaseNode> > () = std::make_shared<ConstNode>(yystack_[0].value.as < double > ()); }
-#line 1380 "grammar.tab.cc"
+#line 1412 "grammar.tab.cc"
     break;
 
   case 51:
-#line 333 "grammar.y"
+#line 361 "grammar.y"
                                                     { yylhs.value.as < std::shared_ptr<BaseNode> > () = yystack_[1].value.as < std::shared_ptr<BaseNode> > (); }
-#line 1386 "grammar.tab.cc"
+#line 1418 "grammar.tab.cc"
     break;
 
   case 52:
-#line 334 "grammar.y"
+#line 362 "grammar.y"
                                                     { yylhs.value.as < std::shared_ptr<BaseNode> > () = yystack_[0].value.as < std::shared_ptr<BaseNode> > (); }
-#line 1392 "grammar.tab.cc"
+#line 1424 "grammar.tab.cc"
     break;
 
   case 53:
-#line 337 "grammar.y"
+#line 365 "grammar.y"
                                                     { yylhs.value.as < std::shared_ptr<BaseNode> > () = std::make_shared<IfNode>(yystack_[2].value.as < std::shared_ptr<BaseNode> > (), yystack_[0].value.as < std::shared_ptr<BaseNode> > ()); }
-#line 1398 "grammar.tab.cc"
+#line 1430 "grammar.tab.cc"
     break;
 
   case 54:
-#line 338 "grammar.y"
+#line 366 "grammar.y"
                                                     { yylhs.value.as < std::shared_ptr<BaseNode> > () = std::make_shared<IfNode>(yystack_[4].value.as < std::shared_ptr<BaseNode> > (), yystack_[2].value.as < std::shared_ptr<BaseNode> > (), yystack_[0].value.as < std::shared_ptr<BaseNode> > ()); }
-#line 1404 "grammar.tab.cc"
+#line 1436 "grammar.tab.cc"
     break;
 
   case 55:
-#line 341 "grammar.y"
+#line 369 "grammar.y"
                                                     { yylhs.value.as < std::shared_ptr<BaseNode> > () = std::make_shared<WhileNode>(yystack_[2].value.as < std::shared_ptr<BaseNode> > (), yystack_[0].value.as < std::shared_ptr<BaseNode> > ()); }
-#line 1410 "grammar.tab.cc"
+#line 1442 "grammar.tab.cc"
     break;
 
   case 56:
-#line 344 "grammar.y"
+#line 372 "grammar.y"
                                                     { yylhs.value.as < std::shared_ptr<BaseNode> > () = std::make_shared<BinOpNode>(yystack_[2].value.as < std::shared_ptr<BaseNode> > (), binOpType::AND, yystack_[0].value.as < std::shared_ptr<BaseNode> > ()); }
-#line 1416 "grammar.tab.cc"
+#line 1448 "grammar.tab.cc"
     break;
 
   case 57:
-#line 345 "grammar.y"
+#line 373 "grammar.y"
                                                     { yylhs.value.as < std::shared_ptr<BaseNode> > () = std::make_shared<BinOpNode>(yystack_[2].value.as < std::shared_ptr<BaseNode> > (), binOpType::OR, yystack_[0].value.as < std::shared_ptr<BaseNode> > ()); }
-#line 1422 "grammar.tab.cc"
+#line 1454 "grammar.tab.cc"
     break;
 
   case 58:
-#line 346 "grammar.y"
+#line 374 "grammar.y"
                                                     { yylhs.value.as < std::shared_ptr<BaseNode> > () = std::make_shared<UnOpNode>(yystack_[0].value.as < std::shared_ptr<BaseNode> > (), unOpType::NOT); }
-#line 1428 "grammar.tab.cc"
+#line 1460 "grammar.tab.cc"
     break;
 
   case 59:
-#line 347 "grammar.y"
+#line 375 "grammar.y"
                                                     { yylhs.value.as < std::shared_ptr<BaseNode> > () = yystack_[1].value.as < std::shared_ptr<BaseNode> > (); }
-#line 1434 "grammar.tab.cc"
+#line 1466 "grammar.tab.cc"
     break;
 
   case 60:
-#line 348 "grammar.y"
+#line 376 "grammar.y"
                                                     { yylhs.value.as < std::shared_ptr<BaseNode> > () = yystack_[0].value.as < std::shared_ptr<BaseNode> > (); }
-#line 1440 "grammar.tab.cc"
+#line 1472 "grammar.tab.cc"
     break;
 
   case 61:
-#line 349 "grammar.y"
+#line 377 "grammar.y"
                                                     { yylhs.value.as < std::shared_ptr<BaseNode> > () = std::make_shared<BinOpNode>(yystack_[2].value.as < std::shared_ptr<BaseNode> > (), binOpType::EQUAL, yystack_[0].value.as < std::shared_ptr<BaseNode> > ()); }
-#line 1446 "grammar.tab.cc"
+#line 1478 "grammar.tab.cc"
     break;
 
   case 62:
-#line 350 "grammar.y"
+#line 378 "grammar.y"
                                                     { yylhs.value.as < std::shared_ptr<BaseNode> > () = std::make_shared<BinOpNode>(yystack_[2].value.as < std::shared_ptr<BaseNode> > (), binOpType::NOT_EQUAL, yystack_[0].value.as < std::shared_ptr<BaseNode> > ()); }
-#line 1452 "grammar.tab.cc"
+#line 1484 "grammar.tab.cc"
     break;
 
   case 63:
-#line 351 "grammar.y"
+#line 379 "grammar.y"
                                                     { yylhs.value.as < std::shared_ptr<BaseNode> > () = std::make_shared<BinOpNode>(yystack_[2].value.as < std::shared_ptr<BaseNode> > (), binOpType::LESS, yystack_[0].value.as < std::shared_ptr<BaseNode> > ()); }
-#line 1458 "grammar.tab.cc"
+#line 1490 "grammar.tab.cc"
     break;
 
   case 64:
-#line 352 "grammar.y"
+#line 380 "grammar.y"
                                                     { yylhs.value.as < std::shared_ptr<BaseNode> > () = std::make_shared<BinOpNode>(yystack_[2].value.as < std::shared_ptr<BaseNode> > (), binOpType::GREATER, yystack_[0].value.as < std::shared_ptr<BaseNode> > ()); }
-#line 1464 "grammar.tab.cc"
+#line 1496 "grammar.tab.cc"
     break;
 
   case 65:
-#line 353 "grammar.y"
+#line 381 "grammar.y"
                                                     { yylhs.value.as < std::shared_ptr<BaseNode> > () = std::make_shared<BinOpNode>(yystack_[2].value.as < std::shared_ptr<BaseNode> > (), binOpType::LESS_EQ, yystack_[0].value.as < std::shared_ptr<BaseNode> > ()); }
-#line 1470 "grammar.tab.cc"
+#line 1502 "grammar.tab.cc"
     break;
 
   case 66:
-#line 354 "grammar.y"
+#line 382 "grammar.y"
                                                     { yylhs.value.as < std::shared_ptr<BaseNode> > () = std::make_shared<BinOpNode>(yystack_[2].value.as < std::shared_ptr<BaseNode> > (), binOpType::GREATER_EQ, yystack_[0].value.as < std::shared_ptr<BaseNode> > ()); }
-#line 1476 "grammar.tab.cc"
+#line 1508 "grammar.tab.cc"
     break;
 
   case 67:
-#line 357 "grammar.y"
+#line 385 "grammar.y"
                                                     { yylhs.value.as < std::shared_ptr<BaseNode> > () = std::make_shared<UnOpNode>(yystack_[2].value.as < std::shared_ptr<BaseNode> > (), unOpType::SCAN); }
-#line 1482 "grammar.tab.cc"
+#line 1514 "grammar.tab.cc"
     break;
 
   case 68:
-#line 360 "grammar.y"
+#line 388 "grammar.y"
                                                    { yylhs.value.as < std::shared_ptr<BaseNode> > () = std::make_shared<UnOpNode>(yystack_[2].value.as < std::shared_ptr<BaseNode> > (), unOpType::PRINT); }
-#line 1488 "grammar.tab.cc"
+#line 1520 "grammar.tab.cc"
     break;
 
 
-#line 1492 "grammar.tab.cc"
+#line 1524 "grammar.tab.cc"
 
             default:
               break;
@@ -1759,106 +1791,108 @@ namespace yy {
   }
 
 
-  const signed char parser::yypact_ninf_ = -97;
+  const signed char parser::yypact_ninf_ = -103;
 
   const signed char parser::yytable_ninf_ = -1;
 
   const short
   parser::yypact_[] =
   {
-     -18,   -36,   -21,    25,   -18,   -97,   -97,     0,   -97,     7,
-      36,   -97,   -97,   -97,   -97,   -97,    85,    -1,   -97,    -4,
-     -97,    19,    21,    23,    30,    -4,    48,    64,   -97,    85,
-     -97,   -97,    85,   -97,   -97,    70,   -97,    66,   -97,   -97,
-     -97,   -97,   -97,    12,   -97,    -4,    48,   -97,   -97,   138,
-     -14,   -14,    -4,    49,   145,   -10,   -97,   -97,   -97,    73,
-     -97,    -4,    -1,   -97,    79,   -97,    -4,    -4,    -4,    -4,
-      -4,   -14,   -14,   122,    52,    81,    87,   -97,    76,   -97,
-     -97,    90,   104,   157,   -97,   -97,   152,   -97,   -97,    54,
-      54,   -97,   -97,   -97,   -97,    51,   102,    -4,    -4,    -4,
-      -4,    -4,    -4,   -14,   -14,    53,    53,   113,   117,   -97,
-      -4,   -97,   -97,   157,   157,   157,   157,   157,   157,   -97,
-     114,   101,   -97,   -97,   -97,   -97,    53,   -97
+     -24,   -34,   -20,    32,   -24,  -103,  -103,     7,  -103,    20,
+       8,  -103,  -103,  -103,  -103,  -103,    86,   -11,  -103,    -6,
+    -103,    24,    25,    31,    49,    -6,    56,    65,  -103,    86,
+    -103,  -103,    86,  -103,  -103,    71,  -103,    67,  -103,  -103,
+    -103,  -103,  -103,  -103,    68,    96,    -6,    56,  -103,  -103,
+     139,   -13,   -13,    -6,    73,   146,    -3,  -103,  -103,  -103,
+      74,  -103,    -6,  -103,    76,    80,  -103,    -6,    -6,    -6,
+      -6,    -6,   -13,   -13,   123,    21,    53,    88,  -103,    98,
+    -103,  -103,    99,   105,   158,  -103,  -103,   153,  -103,  -103,
+      55,    55,  -103,  -103,  -103,  -103,    52,    82,    -6,    -6,
+      -6,    -6,    -6,    -6,   -13,   -13,   102,   102,   120,   130,
+    -103,    -6,  -103,  -103,   158,   158,   158,   158,   158,   158,
+    -103,   115,   104,  -103,  -103,  -103,  -103,   102,  -103
   };
 
   const signed char
   parser::yydefact_[] =
   {
        0,     0,     0,     0,     2,     3,     5,     0,     6,     0,
-       0,     1,     4,     8,    15,     7,    17,    12,    35,     0,
+       0,     1,     4,     8,    15,     7,    17,     0,    35,     0,
       32,     0,     0,     0,     0,     0,    43,     0,    30,    16,
       20,    22,     0,    23,    34,     0,    25,     0,    26,    27,
-      28,    29,    13,     0,    10,     0,    49,    50,    52,     0,
-       0,     0,     0,     0,     0,     0,    18,    14,    21,     0,
-      24,     0,     0,     9,     0,    36,     0,     0,     0,     0,
-       0,     0,     0,    60,     0,     0,     0,    43,     0,    19,
-      38,     0,    39,    41,    33,    31,     0,    11,    51,    44,
-      45,    46,    47,    48,    58,    60,     0,     0,     0,     0,
-       0,     0,     0,     0,     0,     0,     0,     0,     0,    37,
-       0,    42,    59,    62,    61,    63,    64,    65,    66,    56,
-      57,    53,    55,    68,    67,    40,     0,    54
+      28,    29,    10,    13,     0,    11,     0,    49,    50,    52,
+       0,     0,     0,     0,     0,     0,     0,    18,    14,    21,
+       0,    24,     0,     9,     0,     0,    36,     0,     0,     0,
+       0,     0,     0,     0,    60,     0,     0,     0,    43,     0,
+      19,    38,     0,    39,    41,    33,    31,     0,    12,    51,
+      44,    45,    46,    47,    48,    58,    60,     0,     0,     0,
+       0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+      37,     0,    42,    59,    62,    61,    63,    64,    65,    66,
+      56,    57,    53,    55,    68,    67,    40,     0,    54
   };
 
   const short
   parser::yypgoto_[] =
   {
-     -97,   -97,   -97,   130,   -97,   -97,   -97,    80,    39,   -97,
-     -97,   -97,   -97,   -97,   -97,   124,   -25,   -96,   -97,   -97,
-     -97,    11,   -15,   -97,   115,   -19,   -97,   -97,   -49,   -97,
-     -97
+    -103,  -103,  -103,   164,  -103,  -103,    79,  -103,    39,  -103,
+    -103,  -103,  -103,  -103,  -103,   125,   -27,  -102,  -103,  -103,
+    -103,    22,   -15,  -103,   116,   -19,  -103,  -103,   -49,  -103,
+    -103
   };
 
   const signed char
   parser::yydefgoto_[] =
   {
-      -1,     3,     4,     5,     6,     7,    43,    44,    81,    82,
-      15,    16,    27,    57,    28,    29,    30,    31,    32,    85,
-      33,    34,    48,    36,    37,    73,    38,    39,    74,    40,
+      -1,     3,     4,     5,     6,     7,    44,    45,    82,    83,
+      15,    16,    27,    58,    28,    29,    30,    31,    32,    86,
+      33,    34,    49,    36,    37,    74,    38,    39,    75,    40,
       41
   };
 
-  const signed char
+  const unsigned char
   parser::yytable_[] =
   {
-      49,    35,    75,    13,    58,     9,    54,    71,    72,   121,
-     122,     8,    45,    80,    35,     8,    62,    35,    45,     1,
-      10,     2,    94,    96,    14,    11,    64,    46,    47,    17,
-     127,    46,    47,    76,    58,    63,    83,    46,    47,    18,
-      42,    50,    86,    51,    35,    52,    19,    89,    90,    91,
-      92,    93,    53,    95,   119,   120,    66,    67,    68,    69,
-      70,    68,    69,    70,    97,    98,    99,   100,   101,   102,
-      55,   103,   104,    60,    88,   105,    61,    20,   113,   114,
-     115,   116,   117,   118,    66,    67,    68,    69,    70,    56,
-      77,    83,    66,    67,    68,    69,    70,    20,    84,   108,
-     103,   104,    88,    21,   106,    22,    23,    24,   110,    20,
-     107,    25,     2,   109,    26,    21,   123,    22,    23,    24,
-     124,   103,   104,    25,     2,   112,    26,    66,    67,    68,
-      69,    70,   126,   103,    12,    97,    98,    99,   100,   101,
-     102,    65,    87,    66,    67,    68,    69,    70,    79,   125,
-      66,    67,    68,    69,    70,   111,    59,    66,    67,    68,
-      69,    70,    66,    67,    68,    69,    70,     0,    78
+      50,    35,    59,    76,   122,   123,    55,     9,    72,    73,
+      13,    18,    42,     1,    35,     2,    46,    35,    19,    46,
+      81,    10,     8,    95,    97,   128,     8,    65,    47,    48,
+      43,    14,    11,    59,    77,    47,    48,    84,    47,    48,
+     104,   105,    17,    87,   106,    35,    51,    52,    90,    91,
+      92,    93,    94,    53,    96,   120,   121,    67,    68,    69,
+      70,    71,    69,    70,    71,    98,    99,   100,   101,   102,
+     103,    54,   104,   105,    61,    89,   107,    62,    56,   114,
+     115,   116,   117,   118,   119,    67,    68,    69,    70,    71,
+      57,    63,    84,    67,    68,    69,    70,    71,    20,    85,
+      64,   104,   105,    89,    21,   113,    22,    23,    24,   111,
+      20,   108,    25,     2,    78,    26,    21,    43,    22,    23,
+      24,   109,   110,   124,    25,     2,    20,    26,    67,    68,
+      69,    70,    71,   125,   104,   127,    98,    99,   100,   101,
+     102,   103,    66,    88,    67,    68,    69,    70,    71,    80,
+     126,    67,    68,    69,    70,    71,   112,    60,    67,    68,
+      69,    70,    71,    67,    68,    69,    70,    71,    12,     0,
+      79
   };
 
   const signed char
   parser::yycheck_[] =
   {
-      19,    16,    51,     3,    29,    41,    25,    21,    22,   105,
-     106,     0,    22,    23,    29,     4,     4,    32,    22,    37,
-      41,    39,    71,    72,    24,     0,    45,    41,    42,    22,
-     126,    41,    42,    52,    59,    23,    55,    41,    42,     3,
-      41,    22,    61,    22,    59,    22,    10,    66,    67,    68,
-      69,    70,    22,    72,   103,   104,     5,     6,     7,     8,
-       9,     7,     8,     9,    13,    14,    15,    16,    17,    18,
-      22,    19,    20,     3,    23,    23,    10,    24,    97,    98,
-      99,   100,   101,   102,     5,     6,     7,     8,     9,    25,
-      41,   110,     5,     6,     7,     8,     9,    24,    25,    23,
-      19,    20,    23,    30,    23,    32,    33,    34,     4,    24,
-      23,    38,    39,    23,    41,    30,     3,    32,    33,    34,
-       3,    19,    20,    38,    39,    23,    41,     5,     6,     7,
-       8,     9,    31,    19,     4,    13,    14,    15,    16,    17,
-      18,     3,    62,     5,     6,     7,     8,     9,     3,   110,
-       5,     6,     7,     8,     9,     3,    32,     5,     6,     7,
-       8,     9,     5,     6,     7,     8,     9,    -1,    53
+      19,    16,    29,    52,   106,   107,    25,    41,    21,    22,
+       3,     3,    23,    37,    29,    39,    22,    32,    10,    22,
+      23,    41,     0,    72,    73,   127,     4,    46,    41,    42,
+      41,    24,     0,    60,    53,    41,    42,    56,    41,    42,
+      19,    20,    22,    62,    23,    60,    22,    22,    67,    68,
+      69,    70,    71,    22,    73,   104,   105,     5,     6,     7,
+       8,     9,     7,     8,     9,    13,    14,    15,    16,    17,
+      18,    22,    19,    20,     3,    23,    23,    10,    22,    98,
+      99,   100,   101,   102,   103,     5,     6,     7,     8,     9,
+      25,    23,   111,     5,     6,     7,     8,     9,    24,    25,
+       4,    19,    20,    23,    30,    23,    32,    33,    34,     4,
+      24,    23,    38,    39,    41,    41,    30,    41,    32,    33,
+      34,    23,    23,     3,    38,    39,    24,    41,     5,     6,
+       7,     8,     9,     3,    19,    31,    13,    14,    15,    16,
+      17,    18,     3,    64,     5,     6,     7,     8,     9,     3,
+     111,     5,     6,     7,     8,     9,     3,    32,     5,     6,
+       7,     8,     9,     5,     6,     7,     8,     9,     4,    -1,
+      54
   };
 
   const signed char
@@ -1868,22 +1902,22 @@ namespace yy {
       41,     0,    46,     3,    24,    53,    54,    22,     3,    10,
       24,    30,    32,    33,    34,    38,    41,    55,    57,    58,
       59,    60,    61,    63,    64,    65,    66,    67,    69,    70,
-      72,    73,    41,    49,    50,    22,    41,    42,    65,    68,
-      22,    22,    22,    22,    68,    22,    25,    56,    59,    58,
-       3,    10,     4,    23,    68,     3,     5,     6,     7,     8,
-       9,    21,    22,    68,    71,    71,    68,    41,    67,     3,
-      23,    51,    52,    68,    25,    62,    68,    50,    23,    68,
-      68,    68,    68,    68,    71,    68,    71,    13,    14,    15,
-      16,    17,    18,    19,    20,    23,    23,    23,    23,    23,
-       4,     3,    23,    68,    68,    68,    68,    68,    68,    71,
-      71,    60,    60,     3,     3,    51,    31,    60
+      72,    73,    23,    41,    49,    50,    22,    41,    42,    65,
+      68,    22,    22,    22,    22,    68,    22,    25,    56,    59,
+      58,     3,    10,    23,     4,    68,     3,     5,     6,     7,
+       8,     9,    21,    22,    68,    71,    71,    68,    41,    67,
+       3,    23,    51,    52,    68,    25,    62,    68,    49,    23,
+      68,    68,    68,    68,    68,    71,    68,    71,    13,    14,
+      15,    16,    17,    18,    19,    20,    23,    23,    23,    23,
+      23,     4,     3,    23,    68,    68,    68,    68,    68,    68,
+      71,    71,    60,    60,     3,     3,    51,    31,    60
   };
 
   const signed char
   parser::yyr1_[] =
   {
        0,    43,    44,    45,    45,    46,    46,    47,    47,    48,
-      49,    49,    49,    50,    53,    54,    55,    55,    56,    57,
+      48,    49,    49,    50,    53,    54,    55,    55,    56,    57,
       58,    58,    59,    59,    59,    59,    59,    59,    59,    59,
       59,    60,    61,    62,    63,    64,    64,    65,    65,    51,
       51,    52,    66,    67,    68,    68,    68,    68,    68,    68,
@@ -1895,7 +1929,7 @@ namespace yy {
   parser::yyr2_[] =
   {
        0,     2,     1,     1,     2,     1,     1,     2,     2,     5,
-       1,     3,     0,     1,     3,     1,     1,     0,     1,     3,
+       4,     1,     3,     1,     3,     1,     1,     0,     1,     3,
        1,     2,     1,     1,     2,     1,     1,     1,     1,     1,
        1,     3,     1,     1,     1,     3,     5,     4,     3,     1,
        3,     1,     4,     1,     3,     3,     3,     3,     3,     1,
@@ -1928,13 +1962,13 @@ namespace yy {
   const short
   parser::yyrline_[] =
   {
-       0,   126,   126,   129,   130,   133,   134,   137,   149,   155,
-     170,   171,   172,   175,   178,   181,   196,   197,   199,   205,
-     208,   209,   213,   214,   215,   216,   217,   218,   219,   220,
-     221,   226,   229,   232,   238,   241,   254,   270,   282,   293,
-     294,   297,   300,   303,   317,   318,   319,   320,   321,   322,
-     332,   333,   334,   337,   338,   341,   344,   345,   346,   347,
-     348,   349,   350,   351,   352,   353,   354,   357,   360
+       0,   126,   126,   129,   130,   133,   134,   137,   149,   157,
+     175,   194,   195,   198,   201,   204,   219,   220,   222,   229,
+     232,   233,   237,   238,   239,   240,   241,   242,   243,   244,
+     245,   250,   253,   256,   262,   265,   278,   294,   310,   325,
+     326,   329,   332,   335,   345,   346,   347,   348,   349,   350,
+     360,   361,   362,   365,   366,   369,   372,   373,   374,   375,
+     376,   377,   378,   379,   380,   381,   382,   385,   388
   };
 
   // Print the state stack on the debug stream.
@@ -2017,19 +2051,18 @@ namespace yy {
   }
 
 } // yy
-#line 2021 "grammar.tab.cc"
+#line 2055 "grammar.tab.cc"
 
-#line 364 "grammar.y"
+#line 392 "grammar.y"
 
 
 // Main parsing function: just delegate driver's parser
 yy::parser::token_type yylex (yy::parser::semantic_type* yylval, yy::parser::location_type* l, Driver* driver)
 {
-        return driver->yylex(l, yylval);
+    return driver->yylex(l, yylval);
 }
 
 void yy::parser::error(const yy::parser::location_type& loc, const std::string& message)
 {
-        std::cerr << message << " in line " << loc.begin.line << std::endl;
+    std::cerr << message << " in line " << loc.begin.line << std::endl;
 }
-

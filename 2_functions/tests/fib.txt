@@ -6,14 +6,16 @@ func fib(x)
 	}
 	else
 	{
-		return fib(x-1) + fib(x-2);
+
+		return fib(x - 1) + fib(x - 2);
 	}
 }
 
 func main()
 {
 	var arg = 0;
-	while(arg <= 10)
+
+	while(arg <= 3)
 	{
 		print(fib(arg));
 		arg = arg + 1;

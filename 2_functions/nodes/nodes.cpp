@@ -24,12 +24,20 @@ std::shared_ptr<DeclNode> ScopeNode::findInThisScope(const std::string& name) co
 
 double ScopeNode::visit() const
 {
-	printGraph("open scope");
-	double retval;
+	printGraph("open scope ");
 	for(auto&& stmt : stmts)
-		retval = stmt->visit();
-	printGraph("close scope");
-	return retval;
+	{
+		if(stmt->getNodeType() == nodeType::RET)
+			return stmt->visit();
+		else
+		{
+			double retval = stmt->visit();
+			if(!std::isnan(retval))
+				return retval;
+		}
+	}
+	printGraph("close scope\n");
+	return NAN;
 }
 
 //////////////////////////////////////////////////////////////////_IFNODE_//////////////////////////////////////////////////////////////////
@@ -40,24 +48,24 @@ double IfNode::visit() const
 	if(scope->getNodeType() != nodeType::SCOPE)
 		throw std::runtime_error("Error: wrong action\n");
 	if(cond->visit())
-		scope->visit();
+		return scope->visit();
     else if(else_scope != nullptr)
-        else_scope->visit();
-	printGraph("end if-stmt");
-	return 0;
+        return else_scope->visit();
+    return NAN;
 }
 
 //////////////////////////////////////////////////////////////////_WHILENODE_//////////////////////////////////////////////////////////////////
 
 double WhileNode::visit() const
 {
-	printGraph("start while-stmt");
+	double retval;
+	printGraph("start while-stmt ");
 	if(scope->getNodeType() != nodeType::SCOPE)
 		throw std::runtime_error("Error: wrong action\n");
 	while(cond->visit())
-		scope->visit();
-	printGraph("end while-stmt");
-	return 0;
+		retval = scope->visit();
+	printGraph("end while-stmt ");
+	return retval;
 }
 
 //////////////////////////////////////////////////////////////////_BINOPNODE_//////////////////////////////////////////////////////////////////
@@ -70,15 +78,15 @@ double BinOpNode::visit() const
 	switch(op)
 	{
 		case binOpType::ADD:
-			printGraph("ADD");
+			printGraph("ADD ");
 			return left->visit() + right->visit();
 
 		case binOpType::SUB:
-			printGraph("SUB");
+			printGraph("SUB ");
 			return left->visit() - right->visit();
 
 		case binOpType::MUL:
-			printGraph("MUL");
+			printGraph("MUL ");
 			return left->visit() * right->visit();
 
 		case binOpType::DIV:
@@ -86,7 +94,7 @@ double BinOpNode::visit() const
 			double val = right->visit();
 			if(val == 0)
 				throw std::runtime_error("Error: division by zero\n");
-			printGraph("DIV");
+			printGraph("DIV ");
 			return left->visit() / val;
 		}
 
@@ -95,7 +103,7 @@ double BinOpNode::visit() const
 			int val = static_cast<int>(right->visit());
 			if(val == 0)
 				throw std::runtime_error("Error: division by zero\n");
-			printGraph("MOD");
+			printGraph("MOD ");
 			return static_cast<int>(left->visit()) % val;
 		}
 
@@ -103,43 +111,43 @@ double BinOpNode::visit() const
 		{
 			if(left->getNodeType() != nodeType::ID)
 				throw std::runtime_error("Error: assigning not to the variable\n");
-			printGraph("ASSIGN");
+			printGraph("ASSIGN ");
 			auto var = std::static_pointer_cast<VarNode>(left);
 			double value = right->visit();
 			var->setValue(value);
-			return value;
+			return NAN;
 		}
 
 		case binOpType::NOT_EQUAL:
-			printGraph("NOT_EQUAL");
+			printGraph("NOT_EQUAL ");
 			return static_cast<double>(left->visit() != right->visit());
 
 		case binOpType::EQUAL:
-			printGraph("EQUAL");
+			printGraph("EQUAL ");
 			return static_cast<double>(left->visit() == right->visit());
 
 		case binOpType::LESS:
-			printGraph("LESS");
+			printGraph("LESS ");
 			return static_cast<double>(left->visit() < right->visit());
 
 		case binOpType::GREATER:
-			printGraph("GREATER");
+			printGraph("GREATER ");
 			return static_cast<double>(left->visit() > right->visit());
 
 		case binOpType::LESS_EQ:
-			printGraph("LESS_EQ");
+			printGraph("LESS_EQ ");
 			return static_cast<double>(left->visit() <= right->visit());
 
 		case binOpType::GREATER_EQ:
-			printGraph("GREATER_EQ");
+			printGraph("GREATER_EQ ");
 			return static_cast<double>(left->visit() >= right->visit());
 
 		case binOpType::AND:
-			printGraph("AND");
+			printGraph("AND ");
 			return left->visit() && right->visit();
 
 		case binOpType::OR:
-			printGraph("OR");
+			printGraph("OR ");
 			return left->visit() || right->visit();
 
 		default:
@@ -157,29 +165,29 @@ double UnOpNode::visit() const
 	switch(op)
 	{
 		case unOpType::NOT:
-			printGraph("NOT");
+			printGraph("NOT ");
 			return !(expr->visit());
 
 		case unOpType::PRINT:
 		{
 			double val = expr->visit();
-			printGraph("PRINT");
+			printGraph("PRINT ");
 			std::cout << val << std::endl;
-			return val;
+			return NAN;
 		}
 
 		case unOpType::SCAN:
 		{
 			if(expr->getNodeType() != nodeType::ID)
 				throw std::runtime_error("Error: scanning not to the variable\n");
-			printGraph("SCAN");
+			printGraph("SCAN ");
 
 			double value;
 			std::cin >> value;
 
 			auto var = std::static_pointer_cast<VarNode>(expr);
 			var->setValue(value);
-			return value;
+			return NAN;
 		}
 
 		default:
@@ -194,24 +202,56 @@ std::string FuncNode::getFuncName() const
 	return decl.lock()->getName(); 
 }
 
-auto FuncNode::getFuncArgs() const
+auto FuncNode::getFuncParams() const
 { 
-	return decl.lock()->getFuncArgs(); 
+	return decl.lock()->getFuncParams();
+}
+
+bool FuncNode::isDefined() const
+{ 
+	return decl.lock()->isDefined(); 
 }
 
 //////////////////////////////////////////////////////////////////_CALL_NODE_//////////////////////////////////////////////////////////////////
 
-double CallNode::visit() const
+std::shared_ptr<FuncNode> createNewFuncInstance(const std::shared_ptr<FuncNode>& old_func)
 {
-	printGraph("call func %s", func->getFuncName());
+	auto&& old_scope = old_func->getScope();
+	auto&& old_table = old_scope->getTable();
+	ScopeNode new_scope{*old_scope};
+	auto&& new_table = new_scope.getTable();
+	auto new_scope_ptr = std::make_shared<ScopeNode>(new_scope);
+
+	FuncNode new_func{*old_func};
+	new_func.setScope(new_scope_ptr);
+	return std::make_shared<FuncNode>(new_func);
+}
+
+double CallNode::visit() const 
+{
+	printGraph("call func %s ", name);
+    if(isRecursive)
+    {
+    	// func is not defined yet
+    	auto decl = curScope->find(name);
+	    if(decl == nullptr || decl->getExprType() != exprType::FUNC)
+	        throw std::runtime_error("Error: called unknown function");
+
+	    auto func_decl = std::static_pointer_cast<DeclFuncNode>(decl);
+	    func = createNewFuncInstance(func_decl->getFuncNode());
+    }
+
     auto&& func_scope = func->getScope();
-    auto&& params = func->getFuncArgs();
+    auto&& table = func_scope->getTable();
+    auto&& params = func->getFuncParams();
     int arg_num = 0;
 
     if(args.size() != params.size())
     {
-    	std::cout << "error while visiting call of func " << name << std::endl;
-    	std::cout << "size of args = " << args.size() << ", expected size = " << params.size() << std::endl;
+    	std::cout << "args" << std::endl;
+    	std::for_each(args.begin(), args.end(), [](auto&& arg){ std::cout << arg->visit() << std::endl; });
+    	std::cout << "params" << std::endl;
+    	std::for_each(params.begin(), params.end(), [](auto&& param){ std::cout << param << std::endl; });
     	throw std::runtime_error("Error: incorrect number of function parameters");
     }
 
@@ -220,7 +260,7 @@ double CallNode::visit() const
 
     for(auto&& param_name : params)
     {
-    	double arg_val = args[arg_num];
+    	double arg_val = args[arg_num]->visit();
 
     	auto cur_param = func_scope->findInThisScope(param_name);
     	if(cur_param == nullptr)
@@ -231,6 +271,7 @@ double CallNode::visit() const
         ++arg_num;
     }
 
+    printGraph("call func %s end ", func->getFuncName());
     return func_scope->visit();
 }
 
@@ -238,7 +279,7 @@ double CallNode::visit() const
 
 double RetNode::visit() const
 {
-	printGraph("return expr");
+	printGraph("return expr ");
 	auto type = expr->getNodeType();
 	if(type != nodeType::BINOP && type != nodeType::UNOP && type != nodeType::CONST &&
 	   type != nodeType::ID && type != nodeType::CALL)
@@ -256,5 +297,6 @@ double RetNode::visit() const
 		if(oper_type != unOpType::NOT)
 			throw std::runtime_error("Error: bad unop type of return expression\n");
 	}
+
     return expr->visit();
 }

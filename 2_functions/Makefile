@@ -1,6 +1,6 @@
 COMP = g++
 SOURCE = ./driver/driver.cpp ./nodes/nodes.cpp ./compiler/lex.yy.cc ./compiler/grammar.tab.cc main.cpp
-OPTIONS = -std=c++2a
+OPTIONS = -std=c++2a -g
 EXEC = comp
 
 all:

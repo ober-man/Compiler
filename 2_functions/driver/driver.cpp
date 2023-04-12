@@ -7,6 +7,7 @@ Driver::Driver(const char* file_name)
     curScope = std::make_shared<ScopeNode>();
     globalScope = curScope;
     lex = std::make_unique<Lexer>();
+    curFunc = "global";
 
     // Set new input stream
     lex->switch_streams(input_file, std::cout);
@@ -32,12 +33,18 @@ void Driver::addStmt(std::shared_ptr<BaseNode>& node)
 
 void Driver::start() const
 {
-    auto symbolTable = globalScope->getTable();
+    auto&& symbolTable = globalScope->getTable();
+    auto&& stmts = globalScope->getStmts();
+
+    // for visiting all global variables
+    for(auto&& stmt : stmts)
+        stmt->visit();
+
     for(auto&& [string, decl] : symbolTable)
         if(decl->getName() == "main")
         {
-            auto main = std::static_pointer_cast<DeclFuncNode>(decl);
-            auto scope = main->getScope();
+            auto&& main = std::static_pointer_cast<DeclFuncNode>(decl);
+            auto&& scope = main->getScope();
             scope->visit();
         }
 }

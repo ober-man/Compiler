@@ -126,8 +126,8 @@
 program: global_scope                               { driver->start(); } // driver starts visiting AST after parser makes it
 ;
 
-global_scope:   global_decl                         { $$ = $1; }
-              | global_scope global_decl            { $$ = $2; }
+global_scope:   global_decl                         { driver->addStmt($1); }
+              | global_scope global_decl            { driver->addStmt($2); }
 ;
 
 global_decl:   decl_func                            { $$ = $1; }
@@ -149,27 +149,50 @@ decl_func :   func_sign func_scope                  {
            | func_sign SEMICOLON                    {
                                                         // just declaration without definition
                                                         $$ = $1;
+                                                        driver->clearParams();
+                                                        driver->setCurFunction("global");
                                                     }
 ;
 
-func_sign: FUNC ID LPAR params RPAR                 {
+func_sign:  FUNC ID LPAR params RPAR                 {
+                                                        driver->setCurFunction($2);
                                                         auto node = driver->find($2);
                                                         if(node != nullptr && node->getExprType() == exprType::FUNC)
                                                         {
                                                             auto func_node = std::static_pointer_cast<DeclFuncNode>(node);
                                                             if(func_node->isDefined()) // ODR violation
                                                                 throw std::runtime_error("Error: redeclaration of function\n");
-                                                        } // TODO: handle case var name = func name
-
-                                                        auto new_node = std::make_shared<DeclFuncNode>($2, driver->getFuncArgs());
-                                                        driver->insertName($2, new_node);
-                                                        $$ = new_node;
+                                                            else
+                                                                $$ = node;
+                                                        }
+                                                        else
+                                                        {
+                                                            auto new_node = std::make_shared<DeclFuncNode>($2, driver->getFuncParams());
+                                                            driver->insertName($2, new_node);
+                                                            $$ = new_node;
+                                                        }
                                                     }
+          | FUNC ID LPAR RPAR                       {
+                                                        auto node = driver->find($2);
+                                                        if(node != nullptr && node->getExprType() == exprType::FUNC)
+                                                        {
+                                                            auto func_node = std::static_pointer_cast<DeclFuncNode>(node);
+                                                            if(func_node->isDefined()) // ODR violation
+                                                                throw std::runtime_error("Error: redeclaration of function\n");
+                                                            else
+                                                                $$ = node;
+                                                        }
+                                                        else
+                                                        {
+                                                            auto new_node = std::make_shared<DeclFuncNode>($2);
+                                                            driver->insertName($2, new_node);
+                                                            $$ = new_node;
+                                                        }
+                                                    }                                                    
 ;
 
-params:  param                                      { driver->insertFuncArg($1); }
-       | params COMMA param                         { driver->insertFuncArg($3); }
-       | /* eps */                                  {} // void
+params:  param                                      { driver->insertFuncParam($1); }
+       | param COMMA params                         { driver->insertFuncParam($1); }
 ;
 
 param: ID                                           { $$ = $1; }
@@ -182,14 +205,14 @@ open_func: LBRACE                                   {
                                                         auto scope = std::make_shared<ScopeNode>(driver->getGlobalScope());
                                                         driver->setScope(scope);
 
-                                                        auto&& args = driver->getFuncArgs();
-                                                        for(auto&& arg : args)
+                                                        auto&& params = driver->getFuncParams();
+                                                        for(auto&& param : params)
                                                         {
-                                                            auto var_node = std::make_shared<VarNode>(arg);
-                                                            auto param = std::make_shared<DeclVarNode>(arg, var_node);
-                                                            scope->insert(arg, param);
+                                                            auto var_node = std::make_shared<VarNode>(param);
+                                                            auto decl_node = std::make_shared<DeclVarNode>(param, var_node);
+                                                            scope->insert(param, decl_node);
                                                         }
-                                                        driver->clearArgs();
+                                                        driver->clearParams();
                                                     }
 ;
 
@@ -198,7 +221,8 @@ func_stmts:   stmts                                 { $$ = $1; }
 
 close_func: RBRACE                                  { 
                                                         $$ = driver->getScope();
-                                                        driver->setScope(driver->getGlobalScope()); 
+                                                        driver->setScope(driver->getGlobalScope());
+                                                        driver->setCurFunction("global");
                                                     }
 ;
 
@@ -272,20 +296,28 @@ call: ID LPAR args RPAR                             {
                                                         if(node == nullptr || node->getExprType() != exprType::FUNC)
                                                             throw std::runtime_error("Error: calling unknown function\n");
 
-                                                        auto func_decl = static_pointer_cast<DeclFuncNode>(node);
+                                                        auto func_decl = std::static_pointer_cast<DeclFuncNode>(node);
                                                         auto&& func_args = driver->getFuncArgs();
 
-                                                        $$ = std::make_shared<CallNode>($1, func_decl->getFuncNode(), 
+                                                        bool isRecursive = false;
+                                                        if($1 == driver->getCurFunction())
+                                                            isRecursive = true;
+
+                                                        $$ = std::make_shared<CallNode>($1, isRecursive, func_decl->getFuncNode(), 
                                                                                         driver->getScope(), func_args);
-                                                        driver->clearArgs();    
+                                                        driver->clearArgs();
                                                     }
      | ID LPAR RPAR                                 {
                                                         auto node = driver->findInGlobalScope($1);
                                                         if(node == nullptr || node->getExprType() != exprType::FUNC)
                                                             throw std::runtime_error("Error: calling unknown function\n");
 
-                                                        auto func_decl = static_pointer_cast<DeclFuncNode>(node);
-                                                        $$ = std::make_shared<CallNode>($1, func_decl->getFuncNode(), 
+                                                        bool isRecursive = false;
+                                                        if($1 == driver->getCurFunction())
+                                                            isRecursive = true;
+
+                                                        auto func_decl = std::static_pointer_cast<DeclFuncNode>(node);
+                                                        $$ = std::make_shared<CallNode>($1, isRecursive, func_decl->getFuncNode(), 
                                                                                         driver->getScope());
                                                     }
 ;
@@ -297,7 +329,7 @@ args:  arg                                          { driver->insertFuncArg($1);
 arg:  expr                                          { $$ = $1; }
 ;
 
-assign: name ASSIGN expr SEMICOLON                 { $$ = std::make_shared<BinOpNode>($1, binOpType::ASSIGN, $3); }
+assign: name ASSIGN expr SEMICOLON                  { $$ = std::make_shared<BinOpNode>($1, binOpType::ASSIGN, $3); }
 ;
 
 name: ID                                            {
@@ -310,16 +342,12 @@ name: ID                                            {
                                                     }
 ;
 
-/*exprs:   expr                                       { $$ = $1; }
-       | expr exprs                                 { $$ = $2; }
-;*/
-
 expr:    expr ADD expr                              { $$ = std::make_shared<BinOpNode>($1, binOpType::ADD, $3); }
        | expr SUB expr                              { $$ = std::make_shared<BinOpNode>($1, binOpType::SUB, $3); }
        | expr MUL expr                              { $$ = std::make_shared<BinOpNode>($1, binOpType::MUL, $3); }
        | expr DIV expr                              { $$ = std::make_shared<BinOpNode>($1, binOpType::DIV, $3); }
        | expr MOD expr                              { $$ = std::make_shared<BinOpNode>($1, binOpType::MOD, $3); }
-       | ID                                         {
+       | ID                                         {   
                                                         auto decl_node = driver->find($1);
                                                         if(decl_node == nullptr)
                                                         {
@@ -366,11 +394,10 @@ output: PRINT LPAR expr RPAR SEMICOLON             { $$ = std::make_shared<UnOpN
 // Main parsing function: just delegate driver's parser
 yy::parser::token_type yylex (yy::parser::semantic_type* yylval, yy::parser::location_type* l, Driver* driver)
 {
-        return driver->yylex(l, yylval);
+    return driver->yylex(l, yylval);
 }
 
 void yy::parser::error(const yy::parser::location_type& loc, const std::string& message)
 {
-        std::cerr << message << " in line " << loc.begin.line << std::endl;
+    std::cerr << message << " in line " << loc.begin.line << std::endl;
 }
-
