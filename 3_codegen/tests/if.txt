@@ -1,0 +1,14 @@
+func main()
+{
+	var a;
+	a = scan();
+	if(a % 2 == 0)
+	{
+		print(0);
+	}
+	else
+	{
+		print(1);
+	}
+	return 0;
+}

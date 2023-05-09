@@ -1,0 +1,21 @@
+func main()
+{
+	print((9 - 2 + 3*1) / 2);
+
+	var a = (9 - 2 + 3*1) / 2;
+	print(a);
+
+	var b;
+	b = scan();
+	print(b);
+
+	print(a+b);
+
+	// math error
+	//print(9/0);
+
+	// undefined variable
+	//print(c);
+
+	return 0;
+}

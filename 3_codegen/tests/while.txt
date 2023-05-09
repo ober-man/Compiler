@@ -1,0 +1,11 @@
+func main()
+{
+	// print numbers from 1 to 5
+	var count = 0;
+	while(count < 5)
+	{
+		count = count + 1;
+		print(count);
+	}
+	return 0;
+}
