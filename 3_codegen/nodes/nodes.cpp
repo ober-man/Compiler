@@ -40,10 +40,10 @@ llvm::Value* IfNode::codegen() const
 	auto BBs = globalCodeGen->addIfStart(condValue);
 
 	scope->codegen();
-	globalCodeGen->addIfBranch(BBs);
+	globalCodeGen->addThenBranch(BBs); // then else end
 
 	else_scope->codegen();
-	globalCodeGen->addIfBranch(std::make_pair(BBs.first, BBs.first));
+	globalCodeGen->addElseBranch(BBs.second); // else end end
 
 	return nullptr;
 }
@@ -161,7 +161,7 @@ llvm::Value* FuncNode::codegen() const
     	if(node != nullptr)
 		{
 	        auto&& declNode = std::static_pointer_cast<DeclVarNode>(node);
-	        auto* alloca = decl->codegen(); 							// create alloca for param
+	        auto* alloca = declNode->codegen(); 						// create alloca for param
 	        llvm::Argument* argVal = func->getArg(i); 					// take generated llvm value for it
 	        globalCodeGen->addBinOp(alloca, binOpType::ASSIGN, argVal); // create assign to it
 	   	}

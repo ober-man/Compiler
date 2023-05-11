@@ -25,6 +25,7 @@ class CodeGen
 		~CodeGen() = default;	
 
 		using blocksPairTy = std::pair<llvm::BasicBlock*, llvm::BasicBlock*>;
+		using blocksTripleTy = std::pair<std::pair<llvm::BasicBlock*, llvm::BasicBlock*>, llvm::BasicBlock*>;
 
 		llvm::Value* addBinOp(llvm::Value* left, binOpType op, llvm::Value* right);
 		llvm::Value* addUnOp(llvm::Value* expr, unOpType op);
@@ -34,8 +35,9 @@ class CodeGen
 
 		blocksPairTy addWhileStart(llvm::Value* condValue);
 		void addWhileEnd(llvm::Value* condValue, blocksPairTy BBs);
-		blocksPairTy addIfStart(llvm::Value* condValue);
-		void addIfBranch(blocksPairTy BBs);
+		blocksTripleTy addIfStart(llvm::Value* condValue);
+		void addThenBranch(blocksTripleTy BBs);
+		void addElseBranch(llvm::BasicBlock* endBB);
 
 		llvm::Function* addFuncDecl(unsigned size, const std::string& name);
 		llvm::Value* addFuncBody(llvm::Function* func);

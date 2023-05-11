@@ -7,48 +7,57 @@ declare i32 @__pcl_scan()
 
 define i32 @fib(i32 %0) {
 func_start:
-  store i32 %0, i32 (i32)* @fib
   %1 = alloca i32
-  %2 = load i32, i32* %1
-  %3 = icmp sle i32 %2, 1
-  br i1 %3, label %then_branch, label %else_branch
+  store i32 %0, i32* %1
+  %2 = alloca i32
+  %3 = load i32, i32* %1
+  %4 = icmp sle i32 %3, 1
+  br i1 %4, label %5, label %6
 
-then_branch:                                      ; preds = %func_start
-  ret i32 1
-  br label %if_end
+5:                                                ; preds = %func_start
+  store i32 1, i32* %2
+  br label %14
 
-else_branch:                                      ; preds = %func_start
-  %4 = load i32, i32* %1
-  %5 = sub i32 %4, 2
-  %6 = call i32 @fib(i32 %5)
+6:                                                ; preds = %func_start
   %7 = load i32, i32* %1
-  %8 = sub i32 %7, 1
+  %8 = sub i32 %7, 2
   %9 = call i32 @fib(i32 %8)
-  %10 = add i32 %9, %6
-  ret i32 %10
-  br label %if_end
+  %10 = load i32, i32* %1
+  %11 = sub i32 %10, 1
+  %12 = call i32 @fib(i32 %11)
+  %13 = add i32 %12, %9
+  store i32 %13, i32* %2
+  br label %14
 
-if_end:                                           ; preds = %else_branch, %then_branch
+14:                                               ; preds = %6, %5
+  %15 = load i32, i32* %2
+  ret i32 %15
 }
 
 define i32 @main() {
 func_start:
   %0 = alloca i32
   store i32 0, i32* %0
-  %1 = load i32, i32* %0
-  %2 = icmp sle i32 %1, 3
-  br i1 %2, label %while_body, label %while_end
+  %1 = alloca i32
+  store i32 0, i32* %1
+  %2 = call i32 @__pcl_scan()
+  store i32 %2, i32* %1
+  %3 = load i32, i32* %1
+  %4 = load i32, i32* %0
+  %5 = icmp sle i32 %4, %3
+  br i1 %5, label %while_body, label %while_end
 
 while_body:                                       ; preds = %while_body, %func_start
-  %3 = load i32, i32* %0
-  %4 = call i32 @fib(i32 %3)
-  call void @__pcl_print(i32 %4)
-  %5 = load i32, i32* %0
-  %6 = add i32 %5, 1
-  store i32 %6, i32* %0
-  %7 = load i32, i32* %0
-  %8 = icmp sle i32 %7, 3
-  br i1 %8, label %while_body, label %while_end
+  %6 = load i32, i32* %0
+  %7 = call i32 @fib(i32 %6)
+  call void @__pcl_print(i32 %7)
+  %8 = load i32, i32* %0
+  %9 = add i32 %8, 1
+  store i32 %9, i32* %0
+  %10 = load i32, i32* %1
+  %11 = load i32, i32* %0
+  %12 = icmp sle i32 %11, %10
+  br i1 %12, label %while_body, label %while_end
 
 while_end:                                        ; preds = %while_body, %func_start
   ret i32 0

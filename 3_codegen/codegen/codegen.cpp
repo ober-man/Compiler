@@ -1,6 +1,7 @@
 #include "codegen.hpp"
 
 using blocksPairTy = std::pair<llvm::BasicBlock*, llvm::BasicBlock*>;
+using blocksTripleTy = std::pair<std::pair<llvm::BasicBlock*, llvm::BasicBlock*>, llvm::BasicBlock*>;
 
 CodeGen::CodeGen()
 {
@@ -137,32 +138,33 @@ void CodeGen::addWhileEnd(llvm::Value* condValue, blocksPairTy BBs)
 	builder->SetInsertPoint(BBs.second);
 }
 
-blocksPairTy CodeGen::addIfStart(llvm::Value* condValue)
+blocksTripleTy CodeGen::addIfStart(llvm::Value* condValue)
 {
-	llvm::BasicBlock* thenBB = llvm::BasicBlock::Create(*context, "then_branch", curFunction);
-	llvm::BasicBlock* elseBB = llvm::BasicBlock::Create(*context, "else_branch", curFunction);
-	llvm::BasicBlock* endBB  = llvm::BasicBlock::Create(*context, "if_end", curFunction);
+	llvm::BasicBlock* thenBB = llvm::BasicBlock::Create(*context, ""/*"then_branch"*/, curFunction);
+	llvm::BasicBlock* elseBB = llvm::BasicBlock::Create(*context, ""/*"else_branch"*/, curFunction);
+	llvm::BasicBlock* endBB  = llvm::BasicBlock::Create(*context, ""/*"if_end"*/, curFunction);
 	builder->CreateCondBr(condValue, thenBB, elseBB);
 	builder->SetInsertPoint(thenBB);
-	return std::make_pair(endBB, elseBB);
+	return std::make_pair(std::make_pair(thenBB, elseBB), endBB);
 }
 
-void CodeGen::addIfBranch(blocksPairTy BBs)
+void CodeGen::addThenBranch(blocksTripleTy BBs)
 {
-    builder->CreateBr(BBs.first);
-    builder->SetInsertPoint(BBs.second);
+	// then else end
+	if (!BBs.first.first->getTerminator())
+        builder->CreateBr(BBs.second);
+    builder->SetInsertPoint(BBs.first.second);
+}
+
+void CodeGen::addElseBranch(llvm::BasicBlock* endBB)
+{
+	// else end
+	builder->CreateBr(endBB);
+    builder->SetInsertPoint(endBB);
 }
 
 llvm::Function* CodeGen::addFuncDecl(unsigned size, const std::string& name)
-{/*
-	if(name == "main")
-	{
-		auto* func = module->getFunction("__pcl_start");
-		llvm::BasicBlock *BB = llvm::BasicBlock::Create(*context, "main", func);
-		builder->SetInsertPoint(BB);
-		return func;
-	}
-*/
+{
 	std::vector<llvm::Type*> argTypes;
 	for(int i = 0; i < size; ++i)
 		argTypes.push_back(getInt32Ty());

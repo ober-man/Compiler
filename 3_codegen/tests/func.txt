@@ -1,6 +1,15 @@
 func sqr(x)
 {
-	return x*x;
+	var ret;
+	if(x > 5)
+	{
+		ret = x*x;
+	}
+	else
+	{
+		ret = 0;
+	}
+	return ret;
 }
 
 func main()

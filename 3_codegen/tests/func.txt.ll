@@ -7,12 +7,27 @@ declare i32 @__pcl_scan()
 
 define i32 @sqr(i32 %0) {
 func_start:
-  store i32 %0, i32 (i32)* @sqr
   %1 = alloca i32
-  %2 = load i32, i32* %1
+  store i32 %0, i32* %1
+  %2 = alloca i32
   %3 = load i32, i32* %1
-  %4 = mul i32 %3, %2
-  ret i32 %4
+  %4 = icmp sgt i32 %3, 5
+  br i1 %4, label %then_branch, label %else_branch
+
+then_branch:                                      ; preds = %func_start
+  %5 = load i32, i32* %1
+  %6 = load i32, i32* %1
+  %7 = mul i32 %6, %5
+  store i32 %7, i32* %2
+  br label %if_end
+
+else_branch:                                      ; preds = %func_start
+  store i32 0, i32* %2
+  br label %if_end
+
+if_end:                                           ; preds = %else_branch, %then_branch
+  %8 = load i32, i32* %2
+  ret i32 %8
 }
 
 define i32 @main() {
